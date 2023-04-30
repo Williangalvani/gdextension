@@ -42,6 +42,18 @@ jobs:
             target: template_release
             platform: android
             arch: arm64
+          - identifier: macos-release
+            name: MacOS Release
+            runner: macos-latest
+            target: template_release
+            platform: macos
+            arch: arm64
+          - identifier: macos-debug
+            name: MacOS Debug
+            runner: macos-latest
+            target: template_release
+            platform: macos
+            arch: arm64
 
     steps:
       - name: (Windows) Install mingw64
@@ -111,7 +123,7 @@ jobs:
         shell: sh
         run: |
           for addon in ${{ github.workspace }}/project/addons/*/; do
-            cp --no-clobber '${{ github.workspace }}/README.md' '${{ github.workspace }}/LICENSE' "$addon"
+            cp -n '${{ github.workspace }}/README.md' '${{ github.workspace }}/LICENSE' "$addon"
           done
 
       - name: Upload artifact
