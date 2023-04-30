@@ -1,8 +1,7 @@
-#pragma once
+#ifndef UdpH264Streamer_REGISTER_TYPES_H
+#define UdpH264Streamer_REGISTER_TYPES_H
 
-#include <godot_cpp/core/class_db.hpp>
+void initialize_example_module();
+void uninitialize_example_module();
 
-using namespace godot;
-
-void gdextension_initialize(ModuleInitializationLevel p_level);
-void gdextension_terminate(ModuleInitializationLevel p_level);
+#endif // UdpH264Streamer_REGISTER_TYPES_H
