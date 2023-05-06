@@ -1,6 +1,6 @@
 #include "register_types.h"
 
-#include "UdpH264Streamer.h"
+#include "udph264streamer.h"
 
 #include <gdextension_interface.h>
 #include <godot_cpp/core/defs.hpp>
