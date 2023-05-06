@@ -80,7 +80,7 @@ jobs:
         if: ${{ startsWith(matrix.identifier, 'linux-') }}
         shell: sh
         run: |
-          apt install -y gstreamer gst-plugins-base gst-plugins-good gst-plugins-bad gst-plugins-ugly
+          sudo apt install -y gstreamer gst-plugins-base gst-plugins-good gst-plugins-bad gst-plugins-ugly
 
 
       - name: (Android) Set up Java 11
