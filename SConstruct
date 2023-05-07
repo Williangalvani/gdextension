@@ -21,6 +21,12 @@ sources = Glob("src/*.cpp")
 pkg_config = os.popen("PKG_CONFIG_PATH=$PKG_CONFIG_PATH pkg-config --cflags --libs gstreamer-1.0 gstreamer-app-1.0")
 gstreamer_flags = pkg_config.read().strip().split(" ")
 
+env.MergeFlags(gstreamer_flags)
+
+# Add GStreamer include paths for the Windows build
+if env["platform"] == "windows":
+    env.Append(CPPPATH=[os.path.join(os.environ['GITHUB_WORKSPACE'], 'gstreamer-sdk', 'gstreamer', '1.0', 'mingw_x86_64', 'include')])
+
 if env["platform"] == "macos":
     library = env.SharedLibrary(
         "addons/libudph264streamer.{}.{}.framework/libudph264streamer.{}.{}".format(
