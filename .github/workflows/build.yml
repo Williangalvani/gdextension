@@ -80,15 +80,23 @@ jobs:
         if: ${{ startsWith(matrix.identifier, 'linux-') }}
         shell: sh
         run: |
-          sudo apt-get install -y libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev libgstreamer-plugins-bad1.0-dev gstreamer1.0-plugins-base gstreamer1.0-plugins-good gstreamer1.0-plugins-bad gstreamer1.0-plugins-ugly gstreamer1.0-libav gstreamer1.0-tools gstreamer1.0-x gstreamer1.0-alsa gstreamer1.0-gl gstreamer1.0-gtk3 gstreamer1.0-qt5 gstreamer1.0-pulseaudio
+          sudo apt-get install -y msitools libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev libgstreamer-plugins-bad1.0-dev gstreamer1.0-plugins-base gstreamer1.0-plugins-good gstreamer1.0-plugins-bad gstreamer1.0-plugins-ugly gstreamer1.0-libav gstreamer1.0-tools gstreamer1.0-x gstreamer1.0-alsa gstreamer1.0-gl gstreamer1.0-gtk3 gstreamer1.0-qt5 gstreamer1.0-pulseaudio
 
-
-      - name: (Windows) Install gstreamer
+      - name: (Windows) Install GStreamer SDK
         if: ${{ startsWith(matrix.identifier, 'windows-') }}
-        shell: sh
         run: |
-          sudo apt-get install -y libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev libgstreamer-plugins-bad1.0-dev gstreamer1.0-plugins-base gstreamer1.0-plugins-good gstreamer1.0-plugins-bad gstreamer1.0-plugins-ugly gstreamer1.0-libav gstreamer1.0-tools gstreamer1.0-x gstreamer1.0-alsa gstreamer1.0-gl gstreamer1.0-gtk3 gstreamer1.0-qt5 gstreamer1.0-pulseaudio
-
+          sudo apt-get install -y msitools
+          curl -L -o gstreamer-runtime.msi https://gstreamer.freedesktop.org/data/pkg/windows/1.18.4/mingw/gstreamer-1.0-mingw-x86_64-1.18.4.msi
+          curl -L -o gstreamer-devel.msi https://gstreamer.freedesktop.org/data/pkg/windows/1.18.4/mingw/gstreamer-1.0-devel-mingw-x86_64-1.18.4.msi
+          mkdir gstreamer-sdk
+          /usr/bin/msiextract gstreamer-runtime.msi -C gstreamer-sdk/
+          /usr/bin/msiextract gstreamer-devel.msi -C gstreamer-sdk/
+          export PKG_CONFIG_PATH=${GITHUB_WORKSPACE}/gstreamer-sdk/gstreamer/1.0/mingw_x86_64/lib/pkgconfig/:${PKG_CONFIG_PATH}
+          
+      - name: List contents of pkgconfig directory
+        if: ${{ startsWith(matrix.identifier, 'windows-') }}
+        run: |
+          ls -l ${{ github.workspace }}/gstreamer-sdk/gstreamer/1.0/mingw_x86_64/lib/pkgconfig/
 
       - name: (Android) Set up Java 11
         if: ${{ startsWith(matrix.identifier, 'android-') }}
@@ -138,10 +146,9 @@ jobs:
 
       - name: Compile extension
         shell: sh
-#        env:
-#          SCONS_CACHE: '${{ github.workspace }}/.scons-cache/'
-#          SCONS_CACHE_LIMIT: 8192
         run: |
+          export PKG_CONFIG_PATH=${{ startsWith(matrix.identifier, 'windows-') && format('{0}/gstreamer-sdk/gstreamer/1.0/mingw_x86_64/lib/pkgconfig/', github.workspace) || '' }}
+          echo "PKG_CONFIG_PATH: $PKG_CONFIG_PATH"
           scons target='${{ matrix.target }}' platform='${{ matrix.platform }}' arch='${{ matrix.arch }}' -j2
           ls -l project/addons/*/bin/
 

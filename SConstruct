@@ -18,9 +18,8 @@ env['ENV']['PATH'] = os.environ['PATH'] + os.pathsep + "/opt/homebrew/bin"
 sources = Glob("src/*.cpp")
 
 # Add GStreamer include paths and libraries
-pkg_config = os.popen("pkg-config --cflags --libs gstreamer-1.0 gstreamer-app-1.0")
+pkg_config = os.popen("PKG_CONFIG_PATH=$PKG_CONFIG_PATH pkg-config --cflags --libs gstreamer-1.0 gstreamer-app-1.0")
 gstreamer_flags = pkg_config.read().strip().split(" ")
-env.ParseConfig("pkg-config --cflags --libs gstreamer-1.0 gstreamer-app-1.0")
 
 if env["platform"] == "macos":
     library = env.SharedLibrary(
