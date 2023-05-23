@@ -1,6 +1,6 @@
 #include "register_types.h"
 
-#include "udph264streamer.h"
+#include "RtspServer.h"
 
 #include <gdextension_interface.h>
 #include <godot_cpp/core/defs.hpp>
@@ -14,7 +14,7 @@ void initialize_example_module(ModuleInitializationLevel p_level) {
         return;
     }
 
-    ClassDB::register_class<UdpH264Streamer>();
+    ClassDB::register_class<RtspServer>();
 }
 
 void uninitialize_example_module(ModuleInitializationLevel p_level) {

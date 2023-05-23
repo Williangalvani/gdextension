@@ -1,5 +1,5 @@
-#ifndef Udph264Streamer_H
-#define Udph264Streamer_H
+#ifndef RtspServer_H
+#define RtspServer_H
 
 #include <godot_cpp/classes/node.hpp>
 #include <gst/app/gstappsrc.h>
@@ -9,8 +9,8 @@
 
 namespace godot {
 
-class UdpH264Streamer : public Node {
-    GDCLASS(UdpH264Streamer, Node)
+class RtspServer : public Node {
+    GDCLASS(RtspServer, Node)
 
 private:
     GstElement *appsrc, *pipeline, *conv, *x264enc, *rtph264pay, *udpsink;
@@ -22,8 +22,8 @@ protected:
     static void _bind_methods();
 
 public:
-    UdpH264Streamer();
-    ~UdpH264Streamer();
+    RtspServer();
+    ~RtspServer();
 
     void setup_gstreamer_pipeline();
     void _process(double delta) override;

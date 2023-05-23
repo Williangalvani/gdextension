@@ -29,14 +29,14 @@ if env["platform"] == "windows":
 
 if env["platform"] == "macos":
     library = env.SharedLibrary(
-        "addons/libudph264streamer.{}.{}.framework/libudph264streamer.{}.{}".format(
+        "addons/libRtspServer.{}.{}.framework/libRtspServer.{}.{}".format(
             env["platform"], env["target"], env["platform"], env["target"]
         ),
         source=sources,
     )
 else:
     library = env.SharedLibrary(
-        "addons/libudph264streamer{}{}".format(env["suffix"], env["SHLIBSUFFIX"]),
+        "addons/libRtspServer{}{}".format(env["suffix"], env["SHLIBSUFFIX"]),
         source=sources,
     )
 

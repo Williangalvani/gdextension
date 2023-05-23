@@ -1,20 +1,20 @@
-#include "udph264streamer.h"
+#include "rtspserver.h"
 #include <godot_cpp/core/class_db.hpp>
 #include <gst/gst.h>
+#include <gst/rtsp-server/rtsp-server.h>
 
 using namespace godot;
 
 bool need_frame = true;
 
-UdpH264Streamer::UdpH264Streamer() {
+RtspServer::RtspServer() {
     // Initialize any variables here.
     gst_init(NULL, NULL);
     gst_debug_set_default_threshold(GST_LEVEL_WARNING);
-    udp_port = 5600;
     need_frame = true;
 }
 
-UdpH264Streamer::~UdpH264Streamer() {
+RtspServer::~RtspServer() {
     // Add your cleanup here.
     if (pipeline) {
         gst_element_set_state(pipeline, GST_STATE_NULL);
@@ -22,7 +22,7 @@ UdpH264Streamer::~UdpH264Streamer() {
     }
 }
 
-void UdpH264Streamer::_process(double delta) {
+void RtspServer::_process(double delta) {
 }
 
 
@@ -45,20 +45,21 @@ static void push_frame(GstElement* appsrc, const PackedByteArray &raw_data) {
   gst_buffer_unref (buffer);
 }
 
-void UdpH264Streamer::setup_gstreamer_pipeline() {
+void RtspServer::setup_gstreamer_pipeline() {
   pipeline = gst_pipeline_new ("mypipeline");
   appsrc = gst_element_factory_make ("appsrc", "mysrc");
   conv = gst_element_factory_make ("videoconvert", "myconvert");
   x264enc = gst_element_factory_make ("x264enc", "myencoder");
   rtph264pay = gst_element_factory_make ("rtph264pay", "myrtppay");
-  udpsink = gst_element_factory_make ("udpsink", "myudpsink");
+  GstRTSPServer *server = gst_rtsp_server_new();
+  GstRTSPMountPoints *mounts = gst_rtsp_server_get_mount_points(server);
 
-  if (!pipeline || !appsrc || !conv || !x264enc || !rtph264pay || !udpsink) {
+  if (!pipeline || !appsrc || !conv || !x264enc || !rtph264pay || !server || !mounts) {
     g_printerr ("Failed to create one or more elements.\n");
     return;
   }
 
-  // Set up the appsrc
+ // Set up the appsrc
   GstCaps *caps = gst_caps_new_simple ("video/x-raw",
       "format", G_TYPE_STRING, "RGB",
       "width", G_TYPE_INT, 1280,
@@ -69,18 +70,23 @@ void UdpH264Streamer::setup_gstreamer_pipeline() {
   gst_caps_unref (caps);
 
   g_object_set (x264enc, "tune", 0x00000004, NULL); // Set zerolatency tune
-  g_object_set (udpsink, "host", "127.0.0.1", "port", udp_port, NULL);
+  g_object_set (udpsink, "host", "0.0.0.0", "port", udp_port, NULL);
+
 
   g_signal_connect (appsrc,  "need-data", G_CALLBACK (need_data), NULL);
 
-  gst_bin_add_many (GST_BIN (pipeline), appsrc, conv, x264enc, rtph264pay, udpsink, NULL);
-  gst_element_link_many (appsrc, conv, x264enc, rtph264pay, udpsink, NULL);
+  gst_bin_add_many (GST_BIN (pipeline), appsrc, conv, x264enc, rtph264pay, NULL);
+  gst_element_link_many (appsrc, conv, x264enc, rtph264pay, NULL);
+
+  GstRTSPMediaFactory *factory = gst_rtsp_media_factory_new();
+  gst_rtsp_media_factory_set_launch(factory, "( mypipeline )");
+  gst_rtsp_mount_points_add_factory(mounts, "/test", factory);
+  gst_rtsp_server_attach(server, NULL);
 
   gst_element_set_state (pipeline, GST_STATE_PLAYING);
-
 }
 
-void UdpH264Streamer::push_buffer_to_gstreamer(const PackedByteArray &raw_data) {
+void RtspServer::push_buffer_to_gstreamer(const PackedByteArray &raw_data) {
   if (!pipeline || !appsrc || !conv || !x264enc || !rtph264pay || !udpsink) {
     g_printerr ("creating pipeline...\n");
     setup_gstreamer_pipeline();
@@ -92,10 +98,12 @@ void UdpH264Streamer::push_buffer_to_gstreamer(const PackedByteArray &raw_data) 
   }
 }
 
-void UdpH264Streamer::_bind_methods() {
-    ClassDB::bind_method(D_METHOD("setup_gstreamer_pipeline"), &UdpH264Streamer::setup_gstreamer_pipeline);
-    ClassDB::bind_method(D_METHOD("push_buffer_to_gstreamer"), &UdpH264Streamer::push_buffer_to_gstreamer);
-    ClassDB::bind_method(D_METHOD("get_port"), &UdpH264Streamer::get_port);
-    ClassDB::bind_method(D_METHOD("set_port", "udp_port"), &UdpH264Streamer::set_port);
-    ClassDB::add_property("UdpH264Streamer", PropertyInfo(Variant::INT, "udp_port"), "set_port", "get_port");
+void RtspServer::_bind_methods() {
+    ClassDB::bind_method(D_METHOD("setup_gstreamer_pipeline"), &RtspServer::setup_gstreamer_pipeline);
+    ClassDB::bind_method(D_METHOD("push_buffer_to_gstreamer"), &RtspServer::push_buffer_to_gstreamer);
+    ClassDB::bind_method(D_METHOD("get_port"), &RtspServer::get_port);
+    ClassDB::bind_method(D_METHOD("set_port", "udp_port"), &RtspServer::set_port);
+    ClassDB::add_property("RtspServer", PropertyInfo(Variant::INT, "udp_port"), "set_port", "get_port");
+
 }
+
