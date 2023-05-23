@@ -14,9 +14,6 @@ class RtspServer : public Node {
 
 private:
     GstElement *appsrc, *pipeline, *conv, *x264enc, *rtph264pay, *udpsink;
-    int udp_port;
-    void set_port(const int port) {udp_port = port;};
-    int get_port() const {return udp_port;};
 
 protected:
     static void _bind_methods();

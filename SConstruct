@@ -18,7 +18,7 @@ env['ENV']['PATH'] = os.environ['PATH'] + os.pathsep + "/opt/homebrew/bin"
 sources = Glob("src/*.cpp")
 
 # Add GStreamer include paths and libraries
-pkg_config = os.popen("PKG_CONFIG_PATH=$PKG_CONFIG_PATH pkg-config --cflags --libs gstreamer-1.0 gstreamer-app-1.0")
+pkg_config = os.popen("PKG_CONFIG_PATH=$PKG_CONFIG_PATH pkg-config --cflags --libs gstreamer-1.0 gstreamer-app-1.0 gstreamer-rtsp-server-1.0")
 gstreamer_flags = pkg_config.read().strip().split(" ")
 
 env.MergeFlags(gstreamer_flags)
@@ -29,14 +29,14 @@ if env["platform"] == "windows":
 
 if env["platform"] == "macos":
     library = env.SharedLibrary(
-        "addons/libRtspServer.{}.{}.framework/libRtspServer.{}.{}".format(
+        "addons/librtspserver.{}.{}.framework/librtspserver.{}.{}".format(
             env["platform"], env["target"], env["platform"], env["target"]
         ),
         source=sources,
     )
 else:
     library = env.SharedLibrary(
-        "addons/libRtspServer{}{}".format(env["suffix"], env["SHLIBSUFFIX"]),
+        "addons/librtspserver{}{}".format(env["suffix"], env["SHLIBSUFFIX"]),
         source=sources,
     )
 

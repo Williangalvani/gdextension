@@ -70,7 +70,7 @@ void RtspServer::setup_gstreamer_pipeline() {
   gst_caps_unref (caps);
 
   g_object_set (x264enc, "tune", 0x00000004, NULL); // Set zerolatency tune
-  g_object_set (udpsink, "host", "0.0.0.0", "port", udp_port, NULL);
+  g_object_set (udpsink, "host", "0.0.0.0", "port", 8554, NULL);
 
 
   g_signal_connect (appsrc,  "need-data", G_CALLBACK (need_data), NULL);
@@ -101,9 +101,5 @@ void RtspServer::push_buffer_to_gstreamer(const PackedByteArray &raw_data) {
 void RtspServer::_bind_methods() {
     ClassDB::bind_method(D_METHOD("setup_gstreamer_pipeline"), &RtspServer::setup_gstreamer_pipeline);
     ClassDB::bind_method(D_METHOD("push_buffer_to_gstreamer"), &RtspServer::push_buffer_to_gstreamer);
-    ClassDB::bind_method(D_METHOD("get_port"), &RtspServer::get_port);
-    ClassDB::bind_method(D_METHOD("set_port", "udp_port"), &RtspServer::set_port);
-    ClassDB::add_property("RtspServer", PropertyInfo(Variant::INT, "udp_port"), "set_port", "get_port");
-
 }
 
