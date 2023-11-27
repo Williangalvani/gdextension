@@ -5,6 +5,66 @@ on:
   workflow_dispatch:
 
 jobs:
+  windowsbuild:
+    runs-on: windows-latest
+    strategy:
+      matrix:
+        platform: [windows]
+
+    steps:
+      - name: Set up MSVC environment
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: 'x64'
+
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          submodules: recursive
+
+
+      - name: Install Chocolatey packages
+        run: |
+          choco install --yes --allow-empty-checksums pkgconfiglite
+          choco install --yes zip
+          choco install --yes gstreamer gstreamer-devel
+
+      - name: Install Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      # - name: Set PKG_CONFIG_PATH for GStreamer
+      #   run: |
+      #     echo "PKG_CONFIG_PATH=C:\gstreamer\1.0\msvc_x86_64\lib\pkgconfig" | Out-File -Append -FilePath $Env:GITHUB_ENV -Encoding utf8
+            
+      - name: Install SCons
+        run: |
+          python -m pip install scons
+
+      - name: Build with SCons
+        shell: powershell
+        run: |
+          echo "PKG_CONFIG_PATH: $env:PKG_CONFIG_PATH"
+          scons platform=${{ matrix.platform }}
+        env:
+          PKG_CONFIG_PATH: D:/gstreamer/1.0/msvc_x86_64/lib/pkgconfig
+
+      - name: Copy extra files to addon (Windows)
+        shell: powershell
+        run: |
+          $addons = Get-ChildItem -Path "${{ github.workspace }}/project/addons/*/" -Directory
+          foreach ($addon in $addons) {
+            Copy-Item -Path "${{ github.workspace }}/README.md" -Destination "$addon" -Force
+            Copy-Item -Path "${{ github.workspace }}/LICENSE" -Destination "$addon" -Force
+          }
+
+      - name: Upload artifact (Windows)
+        uses: actions/upload-artifact@v2
+        with:
+          name: ${{ github.event.repository.name }}-windows
+          path: ${{ github.workspace }}/project/
+
   build:
     runs-on: ${{ matrix.runner }}
     name: ${{ matrix.name }}
@@ -36,12 +96,12 @@ jobs:
 #             target: template_debug
 #             platform: windows
 #             arch: x86_64
-          - identifier: windows-release
-            name: Windows Release
-            runner: ubuntu-20.04
-            target: template_release
-            platform: windows
-            arch: x86_64
+          # - identifier: windows-release
+          #   name: Windows Release
+          #   runner: ubuntu-20.04
+          #   target: template_release
+          #   platform: windows
+          #   arch: x86_64
 #           - identifier: android-release
 #             name: Android Release
 #             runner: ubuntu-20.04
@@ -62,15 +122,6 @@ jobs:
 #             arch: arm64
 
     steps:
-      - name: (Windows) Install mingw64
-        if: ${{ startsWith(matrix.identifier, 'windows-') }}
-        shell: sh
-        run: |
-          sudo apt-get update
-          sudo apt-get install mingw-w64
-          sudo update-alternatives --set x86_64-w64-mingw32-gcc /usr/bin/x86_64-w64-mingw32-gcc-posix
-          sudo update-alternatives --set x86_64-w64-mingw32-g++ /usr/bin/x86_64-w64-mingw32-g++-posix
-
       - name: (MacOS) Install gstreamer
         if: ${{ startsWith(matrix.identifier, 'macos-') }}
         shell: sh
@@ -82,7 +133,7 @@ jobs:
         shell: sh
         run: |
           sudo apt-get update
-          sudo apt-get install -y msitools libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev libgstreamer-plugins-bad1.0-dev gstreamer1.0-plugins-base gstreamer1.0-plugins-good gstreamer1.0-plugins-bad gstreamer1.0-plugins-ugly gstreamer1.0-libav gstreamer1.0-tools gstreamer1.0-x gstreamer1.0-alsa gstreamer1.0-gl gstreamer1.0-gtk3 gstreamer1.0-qt5 gstreamer1.0-pulseaudio gstreamer1.0-rtsp
+          sudo apt-get install -y msitools libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev libgstreamer-plugins-bad1.0-dev gstreamer1.0-plugins-base gstreamer1.0-plugins-good gstreamer1.0-plugins-bad gstreamer1.0-plugins-ugly gstreamer1.0-libav gstreamer1.0-tools gstreamer1.0-x gstreamer1.0-alsa gstreamer1.0-gl gstreamer1.0-gtk3 gstreamer1.0-qt5 gstreamer1.0-pulseaudio gstreamer1.0-rtsp libgstrtspserver-1.0-dev
 
       - name: (Android) Set up Java 11
         if: ${{ startsWith(matrix.identifier, 'android-') }}
@@ -115,18 +166,6 @@ jobs:
         with:
           submodules: recursive
 
-      - name: (Windows) Install GStreamer SDK
-        if: ${{ startsWith(matrix.identifier, 'windows-') }}
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y msitools
-          curl -L -o gstreamer-runtime.msi https://gstreamer.freedesktop.org/data/pkg/windows/1.18.4/mingw/gstreamer-1.0-mingw-x86_64-1.18.4.msi
-          curl -L -o gstreamer-devel.msi https://gstreamer.freedesktop.org/data/pkg/windows/1.18.4/mingw/gstreamer-1.0-devel-mingw-x86_64-1.18.4.msi
-          mkdir gstreamer-sdk
-          /usr/bin/msiextract gstreamer-runtime.msi -C gstreamer-sdk/
-          /usr/bin/msiextract gstreamer-devel.msi -C gstreamer-sdk/
-          export PKG_CONFIG_PATH=${GITHUB_WORKSPACE}/gstreamer-sdk/gstreamer/1.0/mingw_x86_64/lib/pkgconfig/:${PKG_CONFIG_PATH}
-        
       - name: Compile extension
         shell: sh
         run: |
