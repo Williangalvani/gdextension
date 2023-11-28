@@ -50,20 +50,11 @@ jobs:
         env:
           PKG_CONFIG_PATH: D:/gstreamer/1.0/msvc_x86_64/lib/pkgconfig
 
-      - name: Copy extra files to addon (Windows)
-        shell: powershell
-        run: |
-          $addons = Get-ChildItem -Path "${{ github.workspace }}/project/addons/*/" -Directory
-          foreach ($addon in $addons) {
-            Copy-Item -Path "${{ github.workspace }}/README.md" -Destination "$addon" -Force
-            Copy-Item -Path "${{ github.workspace }}/LICENSE" -Destination "$addon" -Force
-          }
-
       - name: Upload artifact (Windows)
         uses: actions/upload-artifact@v2
         with:
           name: ${{ github.event.repository.name }}-windows
-          path: ${{ github.workspace }}/project/
+          path: ${{ github.workspace }}/addons/
 
   build:
     runs-on: ${{ matrix.runner }}
@@ -174,16 +165,10 @@ jobs:
           scons target='${{ matrix.target }}' platform='${{ matrix.platform }}' arch='${{ matrix.arch }}' -j2
           ls -l project/addons/*/bin/
 
-      - name: Copy extra files to addon
-        shell: sh
-        run: |
-          for addon in ${{ github.workspace }}/project/addons/*/; do
-            cp -n '${{ github.workspace }}/README.md' '${{ github.workspace }}/LICENSE' "$addon"
-          done
 
       - name: Upload artifact
         uses: actions/upload-artifact@v2
         with:
-          name: ${{ github.event.repository.name }}
+          name: ${{ github.event.repository.name }}-${{ matrix.identifier }}}
           path: |
-            ${{ github.workspace }}/project/
+            ${{ github.workspace }}/addons/
