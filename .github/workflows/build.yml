@@ -169,6 +169,28 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v2
         with:
-          name: ${{ github.event.repository.name }}-${{ matrix.identifier }}}
+          name: ${{ github.event.repository.name }}-${{ matrix.identifier }}
           path: |
             ${{ github.workspace }}/addons/
+
+  zip-artifacts:
+    needs: [windowsbuild, build] # List all jobs that produce artifacts
+    runs-on: ubuntu-latest # or any other runner of your choice
+
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v2
+        with:
+          path: artifacts/
+
+      - name: Zip artifacts
+        run: |
+          cd artifacts
+          zip -r ../all_artifacts.zip .
+        shell: bash
+
+      - name: Upload zipped artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: all_artifacts
+          path: all_artifacts.zip
