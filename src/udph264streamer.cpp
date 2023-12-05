@@ -34,7 +34,6 @@ void UdpH264Streamer::setup_rtsp_server() {
 UdpH264Streamer::UdpH264Streamer() {
     gst_init(NULL, NULL);
     main_loop = g_main_loop_new(NULL, FALSE);  // Create a new GMainLoop
-    udp_port = 5600;
     need_frame = true;
     // Initialize RTSP server
 }
@@ -99,8 +98,8 @@ void UdpH264Streamer::setup_gstreamer_pipeline() {
 
     GstCaps *appsrccaps = gst_caps_new_simple("video/x-raw",
         "format", G_TYPE_STRING, "RGB",  // Adjust as necessary
-        "width", G_TYPE_INT, 1280,
-        "height", G_TYPE_INT, 720,
+        "width", G_TYPE_INT, input_width,
+        "height", G_TYPE_INT, input_height,
         "framerate", GST_TYPE_FRACTION, 60, 1,  // Setting a fixed framerate
         NULL);
     g_object_set(G_OBJECT(appsrc), "caps", appsrccaps,"format", GST_FORMAT_TIME, "is-live", true, NULL);
@@ -109,8 +108,8 @@ void UdpH264Streamer::setup_gstreamer_pipeline() {
     // Configure caps for capsfilter if needed
 GstCaps *convert_caps = gst_caps_new_simple("video/x-raw",
     "format", G_TYPE_STRING, "I420",
-    "width", G_TYPE_INT, 1280,
-    "height", G_TYPE_INT, 720,
+    "width", G_TYPE_INT, input_width,
+    "height", G_TYPE_INT, input_height,
     "framerate", GST_TYPE_FRACTION, 60, 1,  // Setting a fixed framerate
     NULL);
     g_object_set(G_OBJECT(capsfilter), "caps", convert_caps, NULL);
@@ -173,6 +172,15 @@ void UdpH264Streamer::set_port(int port) {
 void UdpH264Streamer::_bind_methods() {
     ClassDB::bind_method(D_METHOD("setup_gstreamer_pipeline"), &UdpH264Streamer::setup_gstreamer_pipeline);
     ClassDB::bind_method(D_METHOD("push_buffer_to_gstreamer"), &UdpH264Streamer::push_buffer_to_gstreamer);
+
+    ClassDB::bind_method(D_METHOD("get_input_width"), &UdpH264Streamer::get_input_width);
+    ClassDB::bind_method(D_METHOD("set_input_width", "width"), &UdpH264Streamer::set_input_width);
+    ClassDB::add_property("UdpH264Streamer", PropertyInfo(Variant::INT, "input_width"), "set_input_width", "get_input_width");
+
+    ClassDB::bind_method(D_METHOD("get_input_height"), &UdpH264Streamer::get_input_height);
+    ClassDB::bind_method(D_METHOD("set_input_height", "height"), &UdpH264Streamer::set_input_height);
+    ClassDB::add_property("UdpH264Streamer", PropertyInfo(Variant::INT, "input_height"), "set_input_height", "get_input_height");
+
     ClassDB::bind_method(D_METHOD("get_port"), &UdpH264Streamer::get_port);
     ClassDB::bind_method(D_METHOD("set_port", "udp_port"), &UdpH264Streamer::set_port);
     ClassDB::add_property("UdpH264Streamer", PropertyInfo(Variant::INT, "udp_port"), "set_port", "get_port");

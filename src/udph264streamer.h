@@ -15,12 +15,13 @@ class UdpH264Streamer : public Node {
 
 private:
     GstElement *appsrc, *pipeline, *videoconvert, *x264enc, *rtph264pay, *udpsink, *queue1, *queue2, *capsfilter, *h264parse;
-    int udp_port;
+    int udp_port = 5600;
     GstRTSPServer *rtsp_server;
     GstRTSPMountPoints *mounts;
     GstRTSPMediaFactory *factory;
     GMainLoop *main_loop;
-
+    int input_width = 1152;
+    int input_height = 648;
 
 protected:
     static void _bind_methods();
@@ -31,6 +32,12 @@ public:
 
     int get_port();
     void set_port(int port);
+    // input_size
+    int get_input_width() { return input_width; };
+    void set_input_width(int width) { input_width = width; };
+    int get_input_height() { return input_height; };
+    void set_input_height(int height) { input_height = height; };
+
     void setup_gstreamer_pipeline();
     void _process(double delta) override;
     void push_buffer_to_gstreamer(const PackedByteArray &raw_data);
