@@ -70,29 +70,30 @@ jobs:
 #             platform: linux
 #             arch: x86_64
           - identifier: linux-release-x86
-            name: Linux Release
+            name: Linux Release x86_64
             runner: ubuntu-20.04
             target: template_release
             platform: linux
             arch: x86_64
+          - identifier: linux-debug-x86
+            name: Linux Release x86_64
+            runner: ubuntu-20.04
+            target: template_debug
+            platform: linux
+            arch: x86_64
           - identifier: linux-release-arm
-            name: Linux Release
+            name: Linux Release arm32
             runner: ubuntu-20.04
             target: template_release
             platform: linux
             arch: arm32
-#           - identifier: windows-debug
-#             name: Windows Debug
-#             runner: ubuntu-20.04
-#             target: template_debug
-#             platform: windows
-#             arch: x86_64
-          # - identifier: windows-release
-          #   name: Windows Release
-          #   runner: ubuntu-20.04
-          #   target: template_release
-          #   platform: windows
-          #   arch: x86_64
+          - identifier: linux-debug-arm
+            name: Linux Release arm32
+            runner: ubuntu-20.04
+            target: template_release
+            platform: linux
+            arch: arm32
+
 #           - identifier: android-release
 #             name: Android Release
 #             runner: ubuntu-20.04
@@ -105,12 +106,12 @@ jobs:
             target: template_release
             platform: macos
             arch: arm64
-#           - identifier: macos-debug
-#             name: MacOS Debug
-#             runner: macos-latest
-#             target: template_release
-#             platform: macos
-#             arch: arm64
+          - identifier: macos-debug
+            name: MacOS Debug
+            runner: macos-latest
+            target: template_release
+            platform: macos
+            arch: arm64
 
     steps:
       - name: (MacOS) Install gstreamer
