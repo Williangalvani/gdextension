@@ -109,7 +109,7 @@ jobs:
           - identifier: macos-debug
             name: MacOS Debug
             runner: macos-latest
-            target: template_release
+            target: template_debug
             platform: macos
             arch: arm64
 

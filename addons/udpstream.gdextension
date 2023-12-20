@@ -11,4 +11,5 @@ linux.release.x86_64="streamer/libudph264streamer.linux.template_release.x86_64.
 linux.debug.arm32="streamer/libudph264streamer.linux.template_debug.arm32.so"
 linux.release.arm32="streamer/libudph264streamer.linux.template_release.arm32.so"
 windows.x86_64="streamer/libudph264streamer.windows.x86_64.dll"
-macos="streamer/libudph264streamer.macos.template_debug"
+macos.release="streamer/libudph264streamer.macos.template_release"
+macos.debug="streamer/libudph264streamer.macos.template_debug"
