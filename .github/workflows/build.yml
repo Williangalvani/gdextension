@@ -187,6 +187,7 @@ jobs:
       - name: Zip artifacts
         run: |
           cd artifacts
+          find . -mindepth 2 -type f -exec mv -i '{}' . \;
           zip -r ../all_artifacts.zip .
         shell: bash
 
