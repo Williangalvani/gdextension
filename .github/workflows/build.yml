@@ -186,6 +186,7 @@ jobs:
         run: |
           cd artifacts
           find . -mindepth 2 -type f -exec mv -i '{}' . \;
+          find . -type d -empty -delete
           zip -r ../all_artifacts.zip .
         shell: bash
 
