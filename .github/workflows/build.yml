@@ -190,8 +190,8 @@ jobs:
           mkdir streamer
           mv *.dll streamer
           mv *.so streamer
-          mv *.template_debug streamer
-          mv *.template_release streamer
+          mv *.template_debug streamer || true
+          mv *.template_release streamer || true
           zip -r ../all_artifacts.zip .
         shell: bash
 
