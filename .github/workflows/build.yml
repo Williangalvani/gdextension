@@ -76,7 +76,7 @@ jobs:
             platform: linux
             arch: x86_64
           - identifier: linux-debug-x86
-            name: Linux Release x86_64
+            name: Linux Debug x86_64
             runner: ubuntu-20.04
             target: template_debug
             platform: linux
@@ -88,7 +88,7 @@ jobs:
             platform: linux
             arch: arm32
           - identifier: linux-debug-arm
-            name: Linux Release arm32
+            name: Linux Debug arm32
             runner: ubuntu-20.04
             target: template_release
             platform: linux
