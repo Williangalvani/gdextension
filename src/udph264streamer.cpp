@@ -21,7 +21,10 @@ void UdpH264Streamer::setup_rtsp_server() {
     // Launch string for the RTSP server pipeline
     std::string launch_string =
         "udpsrc port=" + std::to_string(udp_port) + " caps=\"application/x-rtp\" ! "
-        "rtph264depay ! h264parse ! rtph264pay name=pay0 pt=96";
+        "rtph264depay ! h264parse ! video/x-h264, width=(int)" + std::to_string(this->input_width) +
+        ", height=(int)" + std::to_string(this->input_height) + ", framerate=(fraction)60/1 ! "
+        "rtph264pay config-interval=10 name=pay0 pt=96";
+
 
     gst_rtsp_media_factory_set_launch(factory, launch_string.c_str());
     gst_rtsp_mount_points_add_factory(mounts, "/test", factory);
