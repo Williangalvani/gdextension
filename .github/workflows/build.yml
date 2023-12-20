@@ -187,6 +187,11 @@ jobs:
           cd artifacts
           find . -mindepth 2 -type f -exec mv -i '{}' . \;
           find . -type d -empty -delete
+          mkdir streamer
+          mv *.dll streamer
+          mv *.so streamer
+          mv *.template_debug streamer
+          mv *.template_release streamer
           zip -r ../all_artifacts.zip .
         shell: bash
 
