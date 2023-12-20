@@ -164,8 +164,6 @@ jobs:
           export PKG_CONFIG_PATH=${{ startsWith(matrix.identifier, 'windows-') && format('{0}/gstreamer-sdk/gstreamer/1.0/mingw_x86_64/lib/pkgconfig/', github.workspace) || '' }}
           echo "PKG_CONFIG_PATH: $PKG_CONFIG_PATH"
           scons target='${{ matrix.target }}' platform='${{ matrix.platform }}' arch='${{ matrix.arch }}' -j2
-          ls -l project/addons/*/bin/
-
 
       - name: Upload artifact
         uses: actions/upload-artifact@v2
