@@ -119,16 +119,20 @@ GstCaps *convert_caps = gst_caps_new_simple("video/x-raw",
     gst_caps_unref(convert_caps);
     g_object_set (udpsink, "host", "127.0.0.1", "port", udp_port, NULL);
     // Check for macOS to decide on the encoder
-    #ifdef __AAPPLE__
+    #ifdef __DISABLED_APPLE__
       x264enc = gst_element_factory_make("vtenc_h264_hw", "myencoder");
       g_object_set(x264enc, "realtime", true, NULL);
       g_object_set(x264enc, "allow-frame-reordering", false, NULL);
+      //g_object_set(x264enc, "profile", 2, NULL);  // Set profile to Baseline
+      //g_object_set(x264enc, "key-int-max", 120, NULL);  // Set keyframe interval to 2 seconds
     #else
       x264enc = gst_element_factory_make("x264enc", "myencoder");
-      g_object_set(x264enc, "tune", 4, NULL);
+      g_object_set(x264enc, "pass", 4, NULL);  // Set pass to 'quantizer'
+      g_object_set(x264enc, "quantizer", 20, NULL);  // Set quantizer to a reasonable value
+      g_object_set(x264enc, "tune", 4, NULL);  // Set tune to 'zerolatency'
       g_object_set(x264enc, "bitrate", 5000, NULL);
+      g_object_set(x264enc, "key-int-max", 120, NULL);  // Set keyframe interval to 2 seconds
     #endif
-
     g_signal_connect (appsrc,  "need-data", G_CALLBACK (need_data), NULL);
 
     if (!pipeline || !appsrc || !videoconvert || !capsfilter || !x264enc || !queue1 || !queue2 || !rtph264pay || !udpsink) {
