@@ -11,6 +11,33 @@ bool need_frame = true;
 
 static char *port = (char *) DEFAULT_RTSP_PORT;
 
+
+std::string find_working_hw_encoder() {
+    std::vector<std::string> encoders = {"nvenc_h264", "msdkh264enc","vaapih264enc","vtenc_h264_hw", "x264enc"};
+
+    for (const auto& encoder_name : encoders) {
+        std::string pipeline_str = "videotestsrc ! " + encoder_name + " ! fakesink";
+        GError *error = NULL;
+        GstElement *pipeline = gst_parse_launch(pipeline_str.c_str(), &error);
+
+        if (pipeline == NULL || error != NULL) {
+            g_printerr("Failed to create pipeline: %s\n", error->message);
+            g_error_free(error);
+            continue;
+        }
+
+        GstStateChangeReturn ret = gst_element_set_state(pipeline, GST_STATE_PLAYING);
+        if (ret == GST_STATE_CHANGE_FAILURE) {
+            gst_object_unref(pipeline);
+            continue;
+        }
+
+        gst_element_set_state(pipeline, GST_STATE_NULL);
+        gst_object_unref(pipeline);
+        return encoder_name;
+    }
+    return "";
+}
 void UdpH264Streamer::setup_rtsp_server() {
     rtsp_server = gst_rtsp_server_new();
     g_object_set (rtsp_server, "service", port, NULL);
@@ -38,7 +65,6 @@ UdpH264Streamer::UdpH264Streamer() {
     gst_init(NULL, NULL);
     main_loop = g_main_loop_new(NULL, FALSE);  // Create a new GMainLoop
     need_frame = true;
-    // Initialize RTSP server
 }
 
 UdpH264Streamer::~UdpH264Streamer() {
@@ -108,6 +134,31 @@ void UdpH264Streamer::setup_gstreamer_pipeline() {
     g_object_set(G_OBJECT(appsrc), "caps", appsrccaps,"format", GST_FORMAT_TIME, "is-live", true, NULL);
     gst_caps_unref(appsrccaps);
 
+    // Create the caps for the h264parse element
+    GstCaps *caps = gst_caps_from_string("video/x-h264,stream-format=avc,alignment=au,profile=baseline");
+    if (!caps) {
+        g_printerr("Failed to create caps.\n");
+        return;
+    }
+
+    // Get the source pad of the h264parse element
+    GstPad *pad = gst_element_get_static_pad(h264parse, "src");
+    if (!pad) {
+        g_printerr("Failed to get source pad of h264parse.\n");
+        gst_caps_unref(caps);
+        return;
+    }
+
+    // Set the caps on the pad
+    if (!gst_pad_set_caps(pad, caps)) {
+        g_printerr("Failed to set caps on h264parse.\n");
+    }
+
+    // Unref the pad and the caps
+    gst_object_unref(pad);
+    gst_caps_unref(caps);
+
+
     // Configure caps for capsfilter if needed
 GstCaps *convert_caps = gst_caps_new_simple("video/x-raw",
     "format", G_TYPE_STRING, "I420",
@@ -119,23 +170,41 @@ GstCaps *convert_caps = gst_caps_new_simple("video/x-raw",
     gst_caps_unref(convert_caps);
     g_object_set (udpsink, "host", "127.0.0.1", "port", udp_port, NULL);
     // Check for macOS to decide on the encoder
-    #ifdef __DISABLED_APPLE__
-      x264enc = gst_element_factory_make("vtenc_h264_hw", "myencoder");
-      g_object_set(x264enc, "realtime", true, NULL);
-      g_object_set(x264enc, "allow-frame-reordering", false, NULL);
-      //g_object_set(x264enc, "profile", 2, NULL);  // Set profile to Baseline
-      //g_object_set(x264enc, "key-int-max", 120, NULL);  // Set keyframe interval to 2 seconds
-    #else
+
+    // TODO: use this to pick the encoder
+    auto encoder = find_working_hw_encoder();
+    GST_ERROR("Encoder: %s\n", encoder.c_str());
+
+    if (encoder == "vtenc_h264_hw") {
       x264enc = gst_element_factory_make("x264enc", "myencoder");
       g_object_set(x264enc, "pass", 4, NULL);  // Set pass to 'quantizer'
       g_object_set(x264enc, "quantizer", 20, NULL);  // Set quantizer to a reasonable value
       g_object_set(x264enc, "tune", 4, NULL);  // Set tune to 'zerolatency'
       g_object_set(x264enc, "bitrate", 5000, NULL);
       g_object_set(x264enc, "key-int-max", 120, NULL);  // Set keyframe interval to 2 seconds
-    #endif
+    } else if (encoder == "x264enc") {
+      x264enc = gst_element_factory_make("x264enc", "myencoder");
+      g_object_set(x264enc, "pass", 4, NULL);  // Set pass to 'quantizer'
+      g_object_set(x264enc, "quantizer", 20, NULL);  // Set quantizer to a reasonable value
+      g_object_set(x264enc, "tune", 4, NULL);  // Set tune to 'zerolatency'
+      g_object_set(x264enc, "bitrate", 5000, NULL);
+      g_object_set(x264enc, "key-int-max", 120, NULL);  // Set keyframe interval to 2 seconds
+    } else if (encoder == "nvenc_h264") {
+      GstElement *nvenc_h264 = gst_element_factory_make("nvh264enc", "myencoder");
+      g_object_set(nvenc_h264, "preset", 1, NULL);  // Set preset to 'low-latency'
+      g_object_set(nvenc_h264, "bitrate", 5000, NULL);
+      g_object_set(nvenc_h264, "qp", 20, NULL);  // Set quantization parameter to a reasonable value
+      g_object_set(nvenc_h264, "gop-size", 120, NULL);  // Set GOP size to 2 seconds (assuming 60 fps)
+    } else if (encoder == "vaaapih264enc") {
+      x264enc = gst_element_factory_make("vaapih264enc", "myencoder");
+
+    } else {
+      g_printerr("Invalid encoder: %s\n", encoder.c_str());
+      return;
+    }
     g_signal_connect (appsrc,  "need-data", G_CALLBACK (need_data), NULL);
 
-    if (!pipeline || !appsrc || !videoconvert || !capsfilter || !x264enc || !queue1 || !queue2 || !rtph264pay || !udpsink) {
+    if (!pipeline || !appsrc || !videoconvert || !capsfilter || !x264enc || !h264parse || !queue1 || !queue2 || !rtph264pay || !udpsink) {
         g_printerr("Failed to create one or more elements.\n");
         return;
     }
@@ -143,7 +212,7 @@ GstCaps *convert_caps = gst_caps_new_simple("video/x-raw",
     // Configure your elements as needed, e.g., set properties on appsrc, x264enc, udpsink
 
     gst_bin_add_many(GST_BIN(pipeline), appsrc, videoconvert, capsfilter, queue1, x264enc, h264parse, queue2, rtph264pay, udpsink, NULL);
-    gst_element_link_many(appsrc, videoconvert, capsfilter, queue1, x264enc, queue2, rtph264pay, udpsink, NULL);
+    gst_element_link_many(appsrc, videoconvert, capsfilter, queue1, x264enc, h264parse, queue2, rtph264pay, udpsink, NULL);
 
     // Start the pipeline
     gst_element_set_state(pipeline, GST_STATE_PLAYING);
