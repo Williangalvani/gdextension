@@ -14,12 +14,12 @@ class UdpH264Streamer : public Node {
     GDCLASS(UdpH264Streamer, Node)
 
 private:
-    GstElement *appsrc, *pipeline, *videoconvert, *x264enc, *rtph264pay, *udpsink, *queue1, *queue2, *capsfilter, *h264parse;
+    GstElement *appsrc = NULL, *pipeline = NULL, *videoconvert = NULL, *x264enc = NULL, *rtph264pay = NULL, *udpsink = NULL, *queue1 = NULL, *queue2 = NULL, *capsfilter = NULL, *h264parse = NULL;
     int udp_port = 5600;
-    GstRTSPServer *rtsp_server;
-    GstRTSPMountPoints *mounts;
-    GstRTSPMediaFactory *factory;
-    GMainLoop *main_loop;
+    GstRTSPServer *rtsp_server = NULL;
+    GstRTSPMountPoints *mounts = NULL;
+    GstRTSPMediaFactory *factory = NULL;
+    GMainLoop *main_loop = NULL;
     int input_width = 1152;
     int input_height = 648;
 

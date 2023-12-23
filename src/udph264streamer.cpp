@@ -71,15 +71,19 @@ UdpH264Streamer::~UdpH264Streamer() {
     if (pipeline) {
         gst_element_set_state(pipeline, GST_STATE_NULL);
         gst_object_unref(pipeline);
+        pipeline = NULL;
     }
     if (rtsp_server) {
         g_object_unref(rtsp_server);
+        rtsp_server = NULL;
     }
     if (factory) {
         g_object_unref(factory);
+        factory = NULL;
     }
     if (main_loop) {
         g_main_loop_unref(main_loop);
+        main_loop = NULL;
     }
 }
 
