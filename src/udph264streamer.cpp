@@ -13,7 +13,7 @@ static char *port = (char *) DEFAULT_RTSP_PORT;
 
 
 std::string find_working_hw_encoder() {
-    std::vector<std::string> encoders = {"nvenc_h264", "msdkh264enc","vaapih264enc","vtenc_h264_hw", "x264enc"};
+    std::vector<std::string> encoders = {"nvh264enc", "msdkh264enc","vaapih264enc","vtenc_h264_hw", "x264enc"};
 
     for (const auto& encoder_name : encoders) {
         std::string pipeline_str = "videotestsrc ! " + encoder_name + " ! fakesink";
@@ -193,7 +193,7 @@ GstCaps *convert_caps = gst_caps_new_simple("video/x-raw",
       g_object_set(x264enc, "tune", 4, NULL);  // Set tune to 'zerolatency'
       g_object_set(x264enc, "bitrate", 5000, NULL);
       g_object_set(x264enc, "key-int-max", 120, NULL);  // Set keyframe interval to 2 seconds
-    } else if (encoder == "nvenc_h264") {
+    } else if (encoder == "nvh264enc") {
       GstElement *nvenc_h264 = gst_element_factory_make("nvh264enc", "myencoder");
       g_object_set(nvenc_h264, "preset", 1, NULL);  // Set preset to 'low-latency'
       g_object_set(nvenc_h264, "bitrate", 5000, NULL);
