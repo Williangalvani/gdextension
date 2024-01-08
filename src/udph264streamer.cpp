@@ -194,8 +194,26 @@ GstCaps *convert_caps = gst_caps_new_simple("video/x-raw",
       g_object_set(x264enc, "bitrate", 5000, NULL);
       g_object_set(x264enc, "key-int-max", 120, NULL);  // Set keyframe interval to 2 seconds
     } else if (encoder == "nvh264enc") {
-      GstElement *nvenc_h264 = gst_element_factory_make("nvh264enc", "myencoder");
-      g_object_set(nvenc_h264, "preset", 4, NULL);  // Set preset to 'low-latency'
+      x264enc = gst_element_factory_make("nvh264enc", "myencoder");
+      GstElement *cudaupload = gst_element_factory_make("cudaupload", NULL);
+      GstElement *cudaconvert = gst_element_factory_make("cudaconvert", NULL);
+
+      GstCaps *cudaconvert_caps = gst_caps_from_string("video/x-raw(memory:CUDAMemory),format=I420");
+      cudaconvert_capsfilter = gst_element_factory_make("capsfilter", NULL);
+      g_object_set(cudaconvert_capsfilter, "caps", cudaconvert_caps, NULL);
+      gst_caps_unref(cudaconvert_caps);
+
+      g_object_set(x264enc, "bitrate", 5000, NULL);
+      g_object_set(x264enc, "rc-mode", "cbr", NULL);
+      g_object_set(x264enc, "gop-size", -1, NULL);
+      g_object_set(x264enc, "qos", TRUE, NULL);
+      g_object_set(x264enc, "preset", "low-latency-hq", NULL);
+
+      GstCaps *nvh264enc_caps = gst_caps_from_string("video/x-h264,profile=high");
+      nvh264enc_capsfilter = gst_element_factory_make("capsfilter", NULL);
+      g_object_set(nvh264enc_capsfilter, "caps", nvh264enc_caps, NULL);
+      gst_caps_unref(nvh264enc_caps);
+
     } else if (encoder == "vaapih264enc") {
       x264enc = gst_element_factory_make("vaapih264enc", "myencoder");
 
@@ -212,9 +230,13 @@ GstCaps *convert_caps = gst_caps_new_simple("video/x-raw",
 
     // Configure your elements as needed, e.g., set properties on appsrc, x264enc, udpsink
 
-    gst_bin_add_many(GST_BIN(pipeline), appsrc, videoconvert, capsfilter, queue1, x264enc, h264parse, queue2, rtph264pay, udpsink, NULL);
-    gst_element_link_many(appsrc, videoconvert, capsfilter, queue1, x264enc, h264parse, queue2, rtph264pay, udpsink, NULL);
-
+    if (encoder == "nvenc_h264") {
+      gst_bin_add_many(GST_BIN(pipeline), appsrc, cudaupload, cudaconvert, cudaconvert_capsfilter, x264enc, nvh264enc_capsfilter, queue1, rtph264pay, udpsink, NULL);
+      gst_element_link_many(appsrc, cudaupload, cudaconvert, cudaconvert_capsfilter, x264enc, nvh264enc_capsfilter, queue1, rtph264pay, udpsink, NULL);
+    } else {
+      gst_bin_add_many(GST_BIN(pipeline), appsrc, videoconvert, capsfilter, queue1, x264enc, h264parse, queue2, rtph264pay, udpsink, NULL);
+      gst_element_link_many(appsrc, videoconvert, capsfilter, queue1, x264enc, h264parse, queue2, rtph264pay, udpsink, NULL);
+    }
     // Start the pipeline
     gst_element_set_state(pipeline, GST_STATE_PLAYING);
     g_printerr ("set to playing\n");
