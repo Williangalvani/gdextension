@@ -14,7 +14,7 @@ class UdpH264Streamer : public Node {
     GDCLASS(UdpH264Streamer, Node)
 
 private:
-    GstElement *nvh264enc_capsfilter = NULL, *cudaconvert_capsfilter = NULL, *cudaupload = NULL, *cudaconvert = NULL, *appsrc = NULL, *pipeline = NULL, *videoconvert = NULL, *x264enc = NULL, *rtph264pay = NULL, *udpsink = NULL, *queue1 = NULL, *queue2 = NULL, *capsfilter = NULL, *h264parse = NULL;
+    GstElement *nvh264enc_capsfilter = NULL, *appsrc = NULL, *pipeline = NULL, *videoconvert = NULL, *x264enc = NULL, *rtph264pay = NULL, *udpsink = NULL, *queue1 = NULL, *queue2 = NULL, *capsfilter = NULL, *h264parse = NULL;
     int udp_port = 5600;
     GstRTSPServer *rtsp_server = NULL;
     GstRTSPMountPoints *mounts = NULL;

@@ -144,6 +144,7 @@ void UdpH264Streamer::setup_gstreamer_pipeline() {
         g_printerr("Failed to create caps.\n");
         return;
     }
+    g_object_set(h264parse, "config-interval", 2, NULL);
 
     // Get the source pad of the h264parse element
     GstPad *pad = gst_element_get_static_pad(h264parse, "src");
@@ -195,21 +196,15 @@ GstCaps *convert_caps = gst_caps_new_simple("video/x-raw",
       g_object_set(x264enc, "key-int-max", 120, NULL);  // Set keyframe interval to 2 seconds
     } else if (encoder == "nvh264enc") {
       x264enc = gst_element_factory_make("nvh264enc", "myencoder");
-      GstElement *cudaupload = gst_element_factory_make("cudaupload", NULL);
-      GstElement *cudaconvert = gst_element_factory_make("cudaconvert", NULL);
-
-      GstCaps *cudaconvert_caps = gst_caps_from_string("video/x-raw(memory:CUDAMemory),format=I420");
-      cudaconvert_capsfilter = gst_element_factory_make("capsfilter", NULL);
-      g_object_set(cudaconvert_capsfilter, "caps", cudaconvert_caps, NULL);
-      gst_caps_unref(cudaconvert_caps);
 
       g_object_set(x264enc, "bitrate", 5000, NULL);
-      g_object_set(x264enc, "rc-mode", "cbr", NULL);
-      g_object_set(x264enc, "gop-size", -1, NULL);
+      g_object_set(x264enc, "rc-mode", 2,/*(2): cbr           - CBR*/ NULL);
       g_object_set(x264enc, "qos", TRUE, NULL);
-      g_object_set(x264enc, "preset", "low-latency-hq", NULL);
+      g_object_set(x264enc, "preset", 4 /*low-latency-hq*/, NULL);
+      g_object_set(x264enc, "gop-size", 60, NULL);
+      GST_ERROR("UPDATED CODE2");
 
-      GstCaps *nvh264enc_caps = gst_caps_from_string("video/x-h264,profile=high");
+      GstCaps *nvh264enc_caps = gst_caps_from_string("video/x-h264,stream-format=avc,alignment=au,profile=baseline");
       nvh264enc_capsfilter = gst_element_factory_make("capsfilter", NULL);
       g_object_set(nvh264enc_capsfilter, "caps", nvh264enc_caps, NULL);
       gst_caps_unref(nvh264enc_caps);
@@ -231,8 +226,8 @@ GstCaps *convert_caps = gst_caps_new_simple("video/x-raw",
     // Configure your elements as needed, e.g., set properties on appsrc, x264enc, udpsink
 
     if (encoder == "nvenc_h264") {
-      gst_bin_add_many(GST_BIN(pipeline), appsrc, cudaupload, cudaconvert, cudaconvert_capsfilter, x264enc, nvh264enc_capsfilter, queue1, rtph264pay, udpsink, NULL);
-      gst_element_link_many(appsrc, cudaupload, cudaconvert, cudaconvert_capsfilter, x264enc, nvh264enc_capsfilter, queue1, rtph264pay, udpsink, NULL);
+      gst_bin_add_many(GST_BIN(pipeline), appsrc, x264enc, nvh264enc_capsfilter, queue1, rtph264pay, udpsink, NULL);
+      gst_element_link_many(appsrc, x264enc, nvh264enc_capsfilter, queue1, rtph264pay, udpsink, NULL);
     } else {
       gst_bin_add_many(GST_BIN(pipeline), appsrc, videoconvert, capsfilter, queue1, x264enc, h264parse, queue2, rtph264pay, udpsink, NULL);
       gst_element_link_many(appsrc, videoconvert, capsfilter, queue1, x264enc, h264parse, queue2, rtph264pay, udpsink, NULL);
