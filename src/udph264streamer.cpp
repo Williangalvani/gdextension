@@ -39,10 +39,35 @@ std::string find_working_hw_encoder() {
     return "";
 }
 void UdpH264Streamer::setup_rtsp_server() {
+     GError *error = NULL;
+
+    // Create the RTSP server
     rtsp_server = gst_rtsp_server_new();
-    g_object_set (rtsp_server, "service", port, NULL);
+    if (!rtsp_server) {
+        g_printerr("Failed to create RTSP server\n");
+        return;
+    }
+
+    // Set the server's service port
+    g_object_set(rtsp_server, "service", port, NULL);
+
+    // Get mount points from the server
     mounts = gst_rtsp_server_get_mount_points(rtsp_server);
+    if (!mounts) {
+        g_printerr("Failed to get mount points from RTSP server\n");
+        g_object_unref(rtsp_server);
+        return;
+    }
+
+    // Create a media factory
     factory = gst_rtsp_media_factory_new();
+    if (!factory) {
+        g_printerr("Failed to create RTSP media factory\n");
+        g_object_unref(mounts);
+        g_object_unref(rtsp_server);
+        return;
+    }
+
     gst_rtsp_media_factory_set_shared(factory, TRUE);
 
     // Launch string for the RTSP server pipeline
@@ -53,12 +78,25 @@ void UdpH264Streamer::setup_rtsp_server() {
         "rtph264pay config-interval=10 name=pay0 pt=96";
 
 
+    // Set the launch string for the factory
     gst_rtsp_media_factory_set_launch(factory, launch_string.c_str());
+
+    // Add the factory to the mount points
     gst_rtsp_mount_points_add_factory(mounts, "/test", factory);
+
+    // Unreference the mount points as they are no longer needed
     g_object_unref(mounts);
 
     // Start the RTSP server
-    gst_rtsp_server_attach(rtsp_server, NULL);
+    if (gst_rtsp_server_attach(rtsp_server, NULL) == 0) {
+        g_printerr("Failed to attach RTSP server\n");
+        g_object_unref(factory);
+        g_object_unref(rtsp_server);
+        return;
+    }
+
+    // Server is running now
+    g_print("RTSP server is running\n");
 }
 
 UdpH264Streamer::UdpH264Streamer() {
