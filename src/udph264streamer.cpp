@@ -72,7 +72,7 @@ void UdpH264Streamer::setup_rtsp_server() {
 
     // Launch string for the RTSP server pipeline
     std::string launch_string =
-        "udpsrc port=" + std::to_string(udp_port) + " caps=\"application/x-rtp,media=video,clock-rate=90000,encoding-name=H264\" ! "
+        "udpsrc port=" + std::to_string(udp_port) + " caps=\"application/x-rtp,media=video,clock-rate=90000,encoding-name=H264\" ! " +
         "rtph264depay ! h264parse ! video/x-h264, width=(int)" + std::to_string(this->input_width) +
         ", height=(int)" + std::to_string(this->input_height) + ", framerate=(fraction)60/1 ! "
         "rtph264pay config-interval=10 name=pay0 pt=96";
