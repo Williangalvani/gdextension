@@ -111,12 +111,15 @@ void UdpH264Streamer::setup_rtsp_server()
 
       auto encoder = find_working_hw_encoder();
     if (encoder == "vtenc_h264_hw") {
+        GST_ERROR("using vtenc_h264_w");
         gst_rtsp_media_factory_set_launch(factory,
                                       vtenc_factory.c_str());
     } else if (encoder == "x264enc") {
+        GST_ERROR("using x264enc");
         gst_rtsp_media_factory_set_launch(factory,
                                       x264enc_factory.c_str());
     } else if (encoder == "nvh264enc") {
+        GST_ERROR("using nvenc_h264");
                 gst_rtsp_media_factory_set_launch(factory,
                                       nvh264enc_factory.c_str());
     } else if (encoder == "msdkh264enc") {
@@ -187,7 +190,6 @@ void UdpH264Streamer::_process(double delta)
 
 static void push_frame(const PackedByteArray &raw_data)
 {
-    GST_ERROR("PUSHIN FRAME");
     if (!appsrc)
     {
         GST_ERROR(" APPSRC IS NULL!");
