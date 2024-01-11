@@ -5,56 +5,56 @@ on:
   workflow_dispatch:
 
 jobs:
-  # windowsbuild:
-  #   runs-on: windows-latest
-  #   strategy:
-  #     matrix:
-  #       platform: [windows]
+  windowsbuild:
+    runs-on: windows-latest
+    strategy:
+      matrix:
+        platform: [windows]
 
-  #   steps:
-  #     - name: Set up MSVC environment
-  #       uses: ilammy/msvc-dev-cmd@v1
-  #       with:
-  #         arch: 'x64'
+    steps:
+      - name: Set up MSVC environment
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: 'x64'
 
-  #     - name: Checkout code
-  #       uses: actions/checkout@v3
-  #       with:
-  #         submodules: recursive
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          submodules: recursive
 
 
-  #     - name: Install Chocolatey packages
-  #       run: |
-  #         choco install --yes --allow-empty-checksums pkgconfiglite
-  #         choco install --yes zip
-  #         choco install --yes gstreamer gstreamer-devel
+      - name: Install Chocolatey packages
+        run: |
+          choco install --yes --allow-empty-checksums pkgconfiglite
+          choco install --yes zip
+          choco install --yes gstreamer gstreamer-devel
 
-  #     - name: Install Python
-  #       uses: actions/setup-python@v4
-  #       with:
-  #         python-version: '3.10'
+      - name: Install Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
 
-  #     # - name: Set PKG_CONFIG_PATH for GStreamer
-  #     #   run: |
-  #     #     echo "PKG_CONFIG_PATH=C:\gstreamer\1.0\msvc_x86_64\lib\pkgconfig" | Out-File -Append -FilePath $Env:GITHUB_ENV -Encoding utf8
+      # - name: Set PKG_CONFIG_PATH for GStreamer
+      #   run: |
+      #     echo "PKG_CONFIG_PATH=C:\gstreamer\1.0\msvc_x86_64\lib\pkgconfig" | Out-File -Append -FilePath $Env:GITHUB_ENV -Encoding utf8
             
-  #     - name: Install SCons
-  #       run: |
-  #         python -m pip install scons
+      - name: Install SCons
+        run: |
+          python -m pip install scons
 
-  #     - name: Build with SCons
-  #       shell: powershell
-  #       run: |
-  #         echo "PKG_CONFIG_PATH: $env:PKG_CONFIG_PATH"
-  #         scons platform=${{ matrix.platform }}
-  #       env:
-  #         PKG_CONFIG_PATH: D:/gstreamer/1.0/msvc_x86_64/lib/pkgconfig
+      - name: Build with SCons
+        shell: powershell
+        run: |
+          echo "PKG_CONFIG_PATH: $env:PKG_CONFIG_PATH"
+          scons platform=${{ matrix.platform }}
+        env:
+          PKG_CONFIG_PATH: D:/gstreamer/1.0/msvc_x86_64/lib/pkgconfig
 
-  #     - name: Upload artifact (Windows)
-  #       uses: actions/upload-artifact@v2
-  #       with:
-  #         name: ${{ github.event.repository.name }}-windows
-  #         path: ${{ github.workspace }}/addons/
+      - name: Upload artifact (Windows)
+        uses: actions/upload-artifact@v2
+        with:
+          name: ${{ github.event.repository.name }}-windows
+          path: ${{ github.workspace }}/addons/
 
   build:
     runs-on: ${{ matrix.runner }}
@@ -100,18 +100,18 @@ jobs:
 #             target: template_release
 #             platform: android
 #             arch: arm64
-          # - identifier: macos-release
-          #   name: MacOS Release
-          #   runner: macos-latest
-          #   target: template_release
-          #   platform: macos
-          #   arch: arm64
-          # - identifier: macos-debug
-          #   name: MacOS Debug
-          #   runner: macos-latest
-          #   target: template_debug
-          #   platform: macos
-          #   arch: arm64
+          - identifier: macos-release
+            name: MacOS Release
+            runner: macos-latest
+            target: template_release
+            platform: macos
+            arch: arm64
+          - identifier: macos-debug
+            name: MacOS Debug
+            runner: macos-latest
+            target: template_debug
+            platform: macos
+            arch: arm64
 
     steps:
       - name: (MacOS) Install gstreamer
