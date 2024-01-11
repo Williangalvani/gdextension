@@ -5,11 +5,11 @@ compatibility_minimum = "4.1.0"
 
 [libraries]
 
-linux.debug.x86_64="streamer/libudph264streamer.linux.template_debug.x86_64.so"
-linux.release.x86_64="streamer/libudph264streamer.linux.template_release.x86_64.so"
+linux.debug.x86_64="libudph264streamer.linux.template_debug.x86_64.so"
+linux.release.x86_64="libudph264streamer.linux.template_release.x86_64.so"
 
-linux.debug.arm32="streamer/libudph264streamer.linux.template_debug.arm32.so"
-linux.release.arm32="streamer/libudph264streamer.linux.template_release.arm32.so"
-windows.x86_64="streamer/libudph264streamer.windows.x86_64.dll"
+linux.debug.arm32="libudph264streamer.linux.template_debug.arm32.so"
+linux.release.arm32="libudph264streamer.linux.template_release.arm32.so"
+windows.x86_64="libudph264streamer.windows.x86_64.dll"
 macos.release="libudph264streamer.macos.template_release"
 macos.debug="libudph264streamer.macos.template_debug"
