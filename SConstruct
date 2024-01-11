@@ -34,14 +34,14 @@ if env["platform"] == "windows":
 # Define the shared library target
 if env["platform"] == "macos":
     library = env.SharedLibrary(
-        "addons/libudph264streamer.{}.{}.framework/libudph264streamer.{}.{}".format(
+        "addons/streamer/libudph264streamer.{}.{}.framework/libudph264streamer.{}.{}".format(
             env["platform"], env["target"], env["platform"], env["target"]
         ),
         source=sources,
     )
 else:
     library = env.SharedLibrary(
-        "addons/libudph264streamer{}{}".format(env["suffix"], env["SHLIBSUFFIX"]),
+        "addons/streamer/libudph264streamer{}{}".format(env["suffix"], env["SHLIBSUFFIX"]),
         source=sources,
     )
 

@@ -14,7 +14,8 @@ int input_height = 648;
 
 
 std::string x264enc_factory = "( appsrc name=mysrc is-live=true ! videoconvert ! x264enc tune=zerolatency bitrate=10000 ! video/x-h264,profile=baseline ! rtph264pay name=pay0 pt=96 )";
-
+std::string vtenc_factory = "( appsrc name=mysrc is-live=true ! videoconvert ! vtenc_h264_hw bitrate=10000 ! video/x-h264,profile=baseline ! rtph264pay name=pay0 pt=96 )";
+std::string nvh264enc_factory = "( appsrc name=mysrc is-live=true ! videoconvert ! nvh264enc bitrate=10000 ! video/x-h264,profile=baseline ! rtph264pay name=pay0 pt=96 )";
 
 static void
 need_data()
@@ -107,8 +108,24 @@ void UdpH264Streamer::setup_rtsp_server()
 
     factory = gst_rtsp_media_factory_new();
 
-    gst_rtsp_media_factory_set_launch(factory,
+
+      auto encoder = find_working_hw_encoder();
+    if (encoder == "vtenc_h264_hw") {
+        gst_rtsp_media_factory_set_launch(factory,
+                                      vtenc_factory.c_str());
+    } else if (encoder == "x264enc") {
+        gst_rtsp_media_factory_set_launch(factory,
                                       x264enc_factory.c_str());
+    } else if (encoder == "nvh264enc") {
+                gst_rtsp_media_factory_set_launch(factory,
+                                      nvh264enc_factory.c_str());
+    } else if (encoder == "msdkh264enc") {
+    } else {
+        g_printerr("No working encoder found\n");
+        return;
+    }
+
+
 
     /* notify when our media is ready, This is called whenever someone asks for
      * the media and a new pipeline with our appsrc is created */

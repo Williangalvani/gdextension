@@ -8,7 +8,6 @@ func _ready():
 	RenderingServer.frame_post_draw.connect(push)
 	$"../../UdpH264Streamer".input_height = self.size.y
 	$"../../UdpH264Streamer".input_width = self.size.x
-	$"../../UdpH264Streamer".setup_gstreamer_pipeline()
 	print("script done with setting up gstreamer")
 	
 func push():
