@@ -13,9 +13,9 @@ int input_width = 1152;
 int input_height = 648;
 
 
-std::string x264enc_factory = "( appsrc name=mysrc is-live=true ! videoconvert ! x264enc tune=zerolatency bitrate=10000 ! video/x-h264,profile=high ! rtph264pay name=pay0 pt=96 )";
-std::string vtenc_factory = "( appsrc name=mysrc is-live=true ! videoconvert ! vtenc_h264_hw bitrate=10000 ! video/x-h264,profile=high ! rtph264pay name=pay0 pt=96 )";
-std::string nvh264enc_factory = "( appsrc name=mysrc is-live=true ! videoconvert ! nvh264enc bitrate=10000 ! video/x-h264,profile=high ! rtph264pay name=pay0 pt=96 )";
+std::string x264enc_factory = "( appsrc name=mysrc is-live=true ! queue ! videoconvert ! x264enc tune=zerolatency bitrate=10000 ! video/x-h264,profile=high ! rtph264pay name=pay0 pt=96 )";
+std::string vtenc_factory = "( appsrc name=mysrc is-live=true ! queue ! videoconvert ! vtenc_h264_hw bitrate=10000 ! video/x-h264,profile=high ! rtph264pay name=pay0 pt=96 )";
+std::string nvh264enc_factory = "( appsrc name=mysrc is-live=true ! queue ! videoconvert ! nvh264enc bitrate=10000 ! video/x-h264,profile=high ! rtph264pay name=pay0 pt=96 )";
 
 static void
 need_data()
