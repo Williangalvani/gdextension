@@ -135,7 +135,7 @@ void UdpH264Streamer::setup_rtsp_server()
     g_signal_connect(factory, "media-configure", (GCallback)media_configure,
                      NULL);
     gst_rtsp_media_factory_set_shared(factory, TRUE);
-
+    gst_rtsp_media_factory_set_enable_rtcp(factory, FALSE);
     /* attach the test factory to the /test url */
     gst_rtsp_mount_points_add_factory(mounts, "/test", factory);
 
