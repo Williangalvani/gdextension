@@ -13,9 +13,9 @@ int input_width = 1152;
 int input_height = 648;
 
 
-std::string x264enc_factory = "( appsrc name=mysrc is-live=true ! queue leaky=upstream ! videoconvert ! x264enc tune=zerolatency bitrate=10000 ! video/x-h264,profile=high ! queue leaky=downstream ! rtph264pay name=pay0 pt=96 )";
-std::string vtenc_factory = "( appsrc name=mysrc is-live=true ! queue leaky=upstream ! videoconvert ! vtenc_h264_hw bitrate=10000 ! video/x-h264,profile=high ! queue leaky=downstream ! rtph264pay name=pay0 pt=96 )";
-std::string nvh264enc_factory = "( appsrc name=mysrc is-live=true ! queue leaky=upstream ! videoconvert ! nvh264enc bitrate=10000 ! video/x-h264,profile=high ! queue leaky=downstream ! rtph264pay name=pay0 pt=96 )";
+std::string x264enc_factory = "( appsrc name=mysrc is-live=true ! queue leaky=upstream ! videoconvert ! x264enc tune=zerolatency bitrate=10000 ! video/x-h264,profile=high ! queue leaky=downstream ! rtph264pay name=pay0 pt=96 ! udpsink host=127.0.0.1 port=5600 )";
+std::string vtenc_factory = "( appsrc name=mysrc is-live=true ! queue leaky=upstream ! videoconvert ! vtenc_h264_hw bitrate=10000 ! video/x-h264,profile=high ! queue leaky=downstream ! rtph264pay name=pay0 pt=96 ! udpsink host=127.0.0.1 port=5600 )";
+std::string nvh264enc_factory = "videotestsrc name=mysrc is-live=true ! queue leaky=upstream ! videoconvert ! nvh264enc bitrate=10000 ! video/x-h264,profile=high ! queue leaky=downstream ! rtph264pay config-interval=1 pt=96 ! udpsink host=127.0.0.1 port=5600";
 
 static void
 need_data()
@@ -56,36 +56,6 @@ std::string find_working_hw_encoder()
     return "";
 }
 
-/* called when a new media pipeline is constructed. We can query the
- * pipeline and configure our appsrc */
-static void
-media_configure(GstRTSPMediaFactory *factory, GstRTSPMedia *media,
-                gpointer user_data)
-{
-    GstElement *element;
-    GstFlowReturn ret;
-
-    /* get the element used for providing the streams of the media */
-    element = gst_rtsp_media_get_element(media);
-
-    /* get our appsrc, we named it 'mysrc' with the name property */
-    appsrc = gst_bin_get_by_name_recurse_up(GST_BIN(element), "mysrc");
-
-    /* this instructs appsrc that we will be dealing with timed buffer */
-    gst_util_set_object_arg(G_OBJECT(appsrc), "format", "time");
-    /* configure the caps of the video */
-    g_object_set(G_OBJECT(appsrc), "caps",
-                 gst_caps_new_simple("video/x-raw",
-                                     "format", G_TYPE_STRING, "RGB",
-                                     "width", G_TYPE_INT, input_width,
-                                     "height", G_TYPE_INT, input_height,
-                                     "framerate", GST_TYPE_FRACTION, 60, 1, NULL),
-                 NULL);
-
-    g_signal_connect(appsrc, "need-data", (GCallback)need_data, &ret);
-    // gst_object_unref (appsrc);
-    gst_object_unref(element);
-}
 
 static gboolean
 timeout (GstRTSPServer * server)
@@ -118,8 +88,7 @@ void UdpH264Streamer::setup_rtsp_server()
     * element with pay%d names will be a stream */
     factory = gst_rtsp_media_factory_new ();
     gst_rtsp_media_factory_set_launch (factory, "( "
-        "videotestsrc ! video/x-raw,width=352,height=288,framerate=15/1 ! "
-        "x264enc ! rtph264pay name=pay0 pt=96 )");
+        "udpsrc port=5601 ! application/x-rtp,media=video,clock-rate=90000,encoding-name=H264 ! h264parse config-interval=1 ! rtph264pay name=pay0 pt=96 )");
 
     gst_rtsp_media_factory_set_profiles (factory, GST_RTSP_PROFILE_AVPF);
 
@@ -141,6 +110,13 @@ void UdpH264Streamer::setup_rtsp_server()
 
     /* start serving, this never stops */
     g_print ("stream ready at rtsp://127.0.0.1:8554/test\n");
+    //auto encoder = find_working_hw_encoder();
+    GstElement *pipeline_upstream = gst_parse_launch(nvh264enc_factory.c_str(), NULL);
+    if (pipeline_upstream) {
+         GstStateChangeReturn ret = gst_element_set_state(pipeline_upstream, GST_STATE_PLAYING);
+    } else {
+        GST_ERROR(" BAD PIPELINE");
+    }
 
 }
 
@@ -190,13 +166,13 @@ static void push_frame(const PackedByteArray &raw_data)
     {
         GST_ERROR(" APPSRC IS NULL!");
     }
-    guint size;
-    GstBuffer *buffer;
-    GstFlowReturn ret;
-    buffer = gst_buffer_new_allocate(NULL, raw_data.size(), NULL);
-    gst_buffer_fill(buffer, 0, raw_data.ptr(), raw_data.size());
-    g_signal_emit_by_name(appsrc, "push-buffer", buffer, &ret);
-    gst_buffer_unref(buffer);
+    // guint size;
+    // GstBuffer *buffer;
+    // GstFlowReturn ret;
+    // buffer = gst_buffer_new_allocate(NULL, raw_data.size(), NULL);
+    // gst_buffer_fill(buffer, 0, raw_data.ptr(), raw_data.size());
+    // g_signal_emit_by_name(appsrc, "push-buffer", buffer, &ret);
+    // gst_buffer_unref(buffer);
 }
 
 void UdpH264Streamer::push_buffer_to_gstreamer(const PackedByteArray &raw_data)
@@ -217,7 +193,7 @@ void UdpH264Streamer::push_buffer_to_gstreamer(const PackedByteArray &raw_data)
     }
     else
     {
-        GST_ERROR("NO NEED FRAME");
+       // GST_ERROR("NO NEED FRAME");
     }
 }
 
