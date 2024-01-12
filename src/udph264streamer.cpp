@@ -194,15 +194,11 @@ static void push_frame(const PackedByteArray &raw_data)
     {
         GST_ERROR(" APPSRC IS NULL!");
     }
-    static GstClockTime timestamp = 0;
     guint size;
     GstBuffer *buffer;
     GstFlowReturn ret;
     buffer = gst_buffer_new_allocate(NULL, raw_data.size(), NULL);
     gst_buffer_fill(buffer, 0, raw_data.ptr(), raw_data.size());
-    GST_BUFFER_PTS(buffer) = timestamp;
-    GST_BUFFER_DURATION(buffer) = gst_util_uint64_scale_int(1, GST_SECOND, 60);
-    timestamp += GST_BUFFER_DURATION(buffer);
     g_signal_emit_by_name(appsrc, "push-buffer", buffer, &ret);
     gst_buffer_unref(buffer);
 }
