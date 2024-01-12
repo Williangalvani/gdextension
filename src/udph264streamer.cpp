@@ -15,7 +15,7 @@ int input_height = 648;
 
 std::string x264enc_factory = "( appsrc name=mysrc is-live=true ! queue leaky=upstream ! videoconvert ! x264enc tune=zerolatency bitrate=10000 ! video/x-h264,profile=high ! queue leaky=downstream ! rtph264pay name=pay0 pt=96 ! udpsink host=127.0.0.1 port=5600 )";
 std::string vtenc_factory = "( appsrc name=mysrc is-live=true ! queue leaky=upstream ! videoconvert ! vtenc_h264_hw bitrate=10000 ! video/x-h264,profile=high ! queue leaky=downstream ! rtph264pay name=pay0 pt=96 ! udpsink host=127.0.0.1 port=5600 )";
-std::string nvh264enc_factory = "appsrc name=godotsrc do-timestamp=true is-live=true format=time ! video/x-raw, ! queue leaky=upstream ! videoconvert ! nvh264enc bitrate=10000 ! video/x-h264,profile=high ! queue leaky=downstream ! rtph264pay config-interval=1 pt=96 ! udpsink host=127.0.0.1 port=5600";
+std::string nvh264enc_factory = "appsrc name=godotsrc do-timestamp=true is-live=true format=time ! video/x-raw, ! queue leaky=upstream ! videoconvert ! nvh264enc bitrate=10000 ! video/x-h264,profile=high ! queue leaky=downstream ! rtph264pay config-interval=1 pt=96 ! shmsink wait-for-connection=false sync=true socket-path=/tmp/socketao";
 
 GstElement* global_pipeline = NULL;
 
@@ -122,7 +122,7 @@ void UdpH264Streamer::setup_rtsp_server()
     * element with pay%d names will be a stream */
     factory = gst_rtsp_media_factory_new ();
     gst_rtsp_media_factory_set_launch (factory, "( "
-        "udpsrc port=5600 reuse=true ! application/x-rtp,media=video,clock-rate=90000,encoding-name=H264 ! rtph264depay ! h264parse config-interval=1 ! queue ! rtph264pay name=pay0 pt=96 )");
+        "shmsrc is-live=true socket-path=/tmp/socketao do-timestamp=true ! application/x-rtp,media=video,clock-rate=90000,encoding-name=H264 ! rtph264depay ! h264parse config-interval=1 ! queue ! rtph264pay name=pay0 pt=96 )");
 
     gst_rtsp_media_factory_set_enable_rtcp(factory, FALSE);
     gst_rtsp_media_factory_set_profiles (factory, GST_RTSP_PROFILE_AVPF);
