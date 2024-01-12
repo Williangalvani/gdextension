@@ -87,65 +87,61 @@ media_configure(GstRTSPMediaFactory *factory, GstRTSPMedia *media,
     gst_object_unref(element);
 }
 
+static gboolean
+timeout (GstRTSPServer * server)
+{
+  GstRTSPSessionPool *pool;
+
+  pool = gst_rtsp_server_get_session_pool (server);
+  gst_rtsp_session_pool_cleanup (pool);
+  g_object_unref (pool);
+
+  return TRUE;
+}
+
+
 void UdpH264Streamer::setup_rtsp_server()
 {
-    GError *error = NULL;
+    GstRTSPMountPoints *mounts;
+    GstRTSPMediaFactory *factory;
 
-    // Create the RTSP server
-    rtsp_server = gst_rtsp_server_new();
-    if (!rtsp_server)
-    {
-        g_printerr("Failed to create RTSP server\n");
-        return;
-    }
-
-    // Set the server's service port
-    g_object_set(rtsp_server, "service", port, NULL);
+    /* create a server instance */
+    rtsp_server = gst_rtsp_server_new ();
 
     /* get the mount points for this server, every server has a default object
-     * that be used to map uri mount points to media factories */
-    mounts = gst_rtsp_server_get_mount_points(rtsp_server);
+    * that be used to map uri mount points to media factories */
+    mounts = gst_rtsp_server_get_mount_points (rtsp_server);
 
-    factory = gst_rtsp_media_factory_new();
+    /* make a media factory for a test stream. The default media factory can use
+    * gst-launch syntax to create pipelines.
+    * any launch line works as long as it contains elements named pay%d. Each
+    * element with pay%d names will be a stream */
+    factory = gst_rtsp_media_factory_new ();
+    gst_rtsp_media_factory_set_launch (factory, "( "
+        "videotestsrc ! video/x-raw,width=352,height=288,framerate=15/1 ! "
+        "x264enc ! rtph264pay name=pay0 pt=96 )");
 
+    gst_rtsp_media_factory_set_profiles (factory, GST_RTSP_PROFILE_AVPF);
 
-      auto encoder = find_working_hw_encoder();
-    if (encoder == "vtenc_h264_hw") {
-        GST_ERROR("using vtenc_h264_w");
-        gst_rtsp_media_factory_set_launch(factory,
-                                      vtenc_factory.c_str());
-    } else if (encoder == "x264enc") {
-        GST_ERROR("using x264enc");
-        gst_rtsp_media_factory_set_launch(factory,
-                                      x264enc_factory.c_str());
-    } else if (encoder == "nvh264enc") {
-        GST_ERROR("using nvenc_h264");
-                gst_rtsp_media_factory_set_launch(factory,
-                                      nvh264enc_factory.c_str());
-    } else if (encoder == "msdkh264enc") {
-    } else {
-        g_printerr("No working encoder found\n");
-        return;
-    }
+    /* store up to 0.4 seconds of retransmission data */
+    gst_rtsp_media_factory_set_retransmission_time (factory, 400 * GST_MSECOND);
 
-
-
-    /* notify when our media is ready, This is called whenever someone asks for
-     * the media and a new pipeline with our appsrc is created */
-    g_signal_connect(factory, "media-configure", (GCallback)media_configure,
-                     NULL);
-    gst_rtsp_media_factory_set_shared(factory, TRUE);
-    gst_rtsp_media_factory_set_enable_rtcp(factory, FALSE);
     /* attach the test factory to the /test url */
-    gst_rtsp_mount_points_add_factory(mounts, "/test", factory);
+    gst_rtsp_mount_points_add_factory (mounts, "/test", factory);
 
-    /* don't need the ref to the mounts anymore */
-    g_object_unref(mounts);
+    /* don't need the ref to the mapper anymore */
+    g_object_unref (mounts);
+
     /* attach the server to the default maincontext */
-    gst_rtsp_server_attach(rtsp_server, NULL);
+    if (gst_rtsp_server_attach (rtsp_server, NULL) == 0)
+        GST_ERROR("stream failed\n");
 
-    // Server is running now
-    g_print("RTSP server is running\n");
+    /* add a timeout for the session cleanup */
+    g_timeout_add_seconds (2, (GSourceFunc) timeout, rtsp_server);
+
+    /* start serving, this never stops */
+    g_print ("stream ready at rtsp://127.0.0.1:8554/test\n");
+
 }
 
 UdpH264Streamer::UdpH264Streamer()
