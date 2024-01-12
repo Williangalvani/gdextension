@@ -15,7 +15,9 @@ int input_height = 648;
 
 std::string x264enc_factory = "( appsrc name=mysrc is-live=true ! queue leaky=upstream ! videoconvert ! x264enc tune=zerolatency bitrate=10000 ! video/x-h264,profile=high ! queue leaky=downstream ! rtph264pay name=pay0 pt=96 ! udpsink host=127.0.0.1 port=5600 )";
 std::string vtenc_factory = "( appsrc name=mysrc is-live=true ! queue leaky=upstream ! videoconvert ! vtenc_h264_hw bitrate=10000 ! video/x-h264,profile=high ! queue leaky=downstream ! rtph264pay name=pay0 pt=96 ! udpsink host=127.0.0.1 port=5600 )";
-std::string nvh264enc_factory = "videotestsrc name=mysrc is-live=true ! queue leaky=upstream ! videoconvert ! nvh264enc bitrate=10000 ! video/x-h264,profile=high ! queue leaky=downstream ! rtph264pay config-interval=1 pt=96 ! udpsink host=127.0.0.1 port=5600";
+std::string nvh264enc_factory = "appsrc name=godotsrc do-timestamp=true is-live=true format=time ! video/x-raw, ! queue leaky=upstream ! videoconvert ! nvh264enc bitrate=10000 ! video/x-h264,profile=high ! queue leaky=downstream ! rtph264pay config-interval=1 pt=96 ! udpsink host=127.0.0.1 port=5600";
+
+GstElement* global_pipeline = NULL;
 
 static void
 need_data()
@@ -24,6 +26,38 @@ need_data()
 }
 
 GstElement *appsrc = NULL;
+
+/* called when a new media pipeline is constructed. We can query the
+ * pipeline and configure our appsrc */
+static void
+media_configure(GstRTSPMediaFactory *factory, GstRTSPMedia *media,
+                gpointer user_data)
+{
+    GstElement *element;
+    GstFlowReturn ret;
+
+    /* get the element used for providing the streams of the media */
+    element = gst_rtsp_media_get_element(media);
+
+    /* get our appsrc, we named it 'mysrc' with the name property */
+    appsrc = gst_bin_get_by_name_recurse_up(GST_BIN(element), "mysrc");
+
+    /* this instructs appsrc that we will be dealing with timed buffer */
+    gst_util_set_object_arg(G_OBJECT(appsrc), "format", "time");
+    /* configure the caps of the video */
+    g_object_set(G_OBJECT(appsrc), "caps",
+                 gst_caps_new_simple("video/x-raw",
+                                     "format", G_TYPE_STRING, "RGB",
+                                     "width", G_TYPE_INT, input_width,
+                                     "height", G_TYPE_INT, input_height,
+                                     "framerate", GST_TYPE_FRACTION, 60, 1, NULL),
+                 NULL);
+
+    g_signal_connect(appsrc, "need-data", (GCallback)need_data, &ret);
+    // gst_object_unref (appsrc);
+    gst_object_unref(element);
+}
+
 
 std::string find_working_hw_encoder()
 {
@@ -88,7 +122,7 @@ void UdpH264Streamer::setup_rtsp_server()
     * element with pay%d names will be a stream */
     factory = gst_rtsp_media_factory_new ();
     gst_rtsp_media_factory_set_launch (factory, "( "
-        "udpsrc port=5601 ! application/x-rtp,media=video,clock-rate=90000,encoding-name=H264 ! h264parse config-interval=1 ! rtph264pay name=pay0 pt=96 )");
+        "udpsrc port=5600 ! application/x-rtp,media=video,clock-rate=90000,encoding-name=H264 ! rtph264depay ! h264parse config-interval=1 ! rtph264pay name=pay0 pt=96 )");
 
     gst_rtsp_media_factory_set_profiles (factory, GST_RTSP_PROFILE_AVPF);
 
@@ -111,12 +145,33 @@ void UdpH264Streamer::setup_rtsp_server()
     /* start serving, this never stops */
     g_print ("stream ready at rtsp://127.0.0.1:8554/test\n");
     //auto encoder = find_working_hw_encoder();
-    GstElement *pipeline_upstream = gst_parse_launch(nvh264enc_factory.c_str(), NULL);
-    if (pipeline_upstream) {
-         GstStateChangeReturn ret = gst_element_set_state(pipeline_upstream, GST_STATE_PLAYING);
+    pipeline = gst_parse_launch(nvh264enc_factory.c_str(), NULL);
+    if (pipeline) {
+         GstStateChangeReturn ret = gst_element_set_state(pipeline, GST_STATE_PLAYING);
     } else {
         GST_ERROR(" BAD PIPELINE");
     }
+    global_pipeline = pipeline;
+    
+
+    GstFlowReturn ret;
+
+    appsrc = gst_bin_get_by_name_recurse_up(GST_BIN(pipeline), "godotsrc");
+
+    /* this instructs appsrc that we will be dealing with timed buffer */
+    gst_util_set_object_arg(G_OBJECT(appsrc), "format", "time");
+    /* configure the caps of the video */
+    g_object_set(G_OBJECT(appsrc), "caps",
+                 gst_caps_new_simple("video/x-raw",
+                                     "format", G_TYPE_STRING, "RGB",
+                                     "width", G_TYPE_INT, input_width,
+                                     "height", G_TYPE_INT, input_height,
+                                     "framerate", GST_TYPE_FRACTION, 60, 1, NULL),
+                 NULL);
+
+    g_signal_connect(appsrc, "need-data", (GCallback)need_data, &ret);
+    // gst_object_unref (appsrc);
+
 
 }
 
@@ -124,7 +179,7 @@ UdpH264Streamer::UdpH264Streamer()
 {
     gst_init(NULL, NULL);
     main_loop = g_main_loop_new(NULL, FALSE); // Create a new GMainLoop
-    need_frame = false;
+    need_frame = true;
 }
 
 UdpH264Streamer::~UdpH264Streamer()
@@ -164,15 +219,22 @@ static void push_frame(const PackedByteArray &raw_data)
 {
     if (!appsrc)
     {
+        appsrc = gst_bin_get_by_name(GST_BIN(global_pipeline), "godotsrc");
+        if (!appsrc) {
         GST_ERROR(" APPSRC IS NULL!");
+        }
     }
-    // guint size;
-    // GstBuffer *buffer;
-    // GstFlowReturn ret;
-    // buffer = gst_buffer_new_allocate(NULL, raw_data.size(), NULL);
-    // gst_buffer_fill(buffer, 0, raw_data.ptr(), raw_data.size());
-    // g_signal_emit_by_name(appsrc, "push-buffer", buffer, &ret);
-    // gst_buffer_unref(buffer);
+    static GstClockTime timestamp = 0;
+    guint size;
+    GstBuffer *buffer;
+    GstFlowReturn ret;
+    buffer = gst_buffer_new_allocate(NULL, raw_data.size(), NULL);
+    gst_buffer_fill(buffer, 0, raw_data.ptr(), raw_data.size());
+    GST_BUFFER_PTS(buffer) = timestamp;
+    GST_BUFFER_DURATION(buffer) = gst_util_uint64_scale_int(1, GST_SECOND, 60);
+    timestamp += GST_BUFFER_DURATION(buffer);
+    g_signal_emit_by_name(appsrc, "push-buffer", buffer, &ret);
+    gst_buffer_unref(buffer);
 }
 
 void UdpH264Streamer::push_buffer_to_gstreamer(const PackedByteArray &raw_data)
