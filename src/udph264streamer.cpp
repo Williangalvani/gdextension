@@ -122,13 +122,13 @@ void UdpH264Streamer::setup_rtsp_server()
     * element with pay%d names will be a stream */
     factory = gst_rtsp_media_factory_new ();
     gst_rtsp_media_factory_set_launch (factory, "( "
-        "udpsrc port=5600 ! application/x-rtp,media=video,clock-rate=90000,encoding-name=H264 ! rtph264depay ! h264parse config-interval=1 ! rtph264pay name=pay0 pt=96 )");
+        "udpsrc port=5600 re-use=true ! application/x-rtp,media=video,clock-rate=90000,encoding-name=H264 ! rtph264depay ! h264parse config-interval=1 ! rtph264pay name=pay0 pt=96 )");
 
     gst_rtsp_media_factory_set_enable_rtcp(factory, FALSE);
     gst_rtsp_media_factory_set_profiles (factory, GST_RTSP_PROFILE_AVPF);
 
     /* store up to 0.4 seconds of retransmission data */
-    gst_rtsp_media_factory_set_retransmission_time (factory, 400 * GST_MSECOND);
+    //gst_rtsp_media_factory_set_retransmission_time (factory, 400 * GST_MSECOND);
 
     /* attach the test factory to the /test url */
     gst_rtsp_mount_points_add_factory (mounts, "/test", factory);
