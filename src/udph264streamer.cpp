@@ -13,9 +13,9 @@ int input_width = 1152;
 int input_height = 648;
 
 
-std::string x264enc_factory = "( appsrc name=mysrc is-live=true ! queue leaky=upstream ! videoconvert ! x264enc tune=zerolatency bitrate=10000 ! video/x-h264,profile=high ! queue leaky=downstream ! rtph264pay name=pay0 pt=96 ! udpsink host=127.0.0.1 port=5600 )";
-std::string vtenc_factory = "( appsrc name=mysrc is-live=true ! queue leaky=upstream ! videoconvert ! vtenc_h264_hw bitrate=10000 ! video/x-h264,profile=high ! queue leaky=downstream ! rtph264pay name=pay0 pt=96 ! udpsink host=127.0.0.1 port=5600 )";
-std::string nvh264enc_factory = "appsrc name=godotsrc do-timestamp=true is-live=true format=time ! video/x-raw,format=I420 ! queue leaky=upstream ! videoconvert ! nvh264enc bitrate=10000 ! video/x-h264,profile=high ! queue leaky=downstream ! rtph264pay config-interval=1 pt=96 ! shmsink wait-for-connection=false sync=true socket-path=/tmp/socketao";
+std::string x264enc_factory = "  appsrc name=godotsrc do-timestamp=true is-live=true format=time ! video/x-raw, ! queue leaky=upstream ! videoconvert ! x264enc tune=zerolatency bitrate=10000 ! video/x-h264,profile=high ! queue leaky=downstream ! rtph264pay config-interval=1 pt=96 ! shmsink wait-for-connection=false sync=true socket-path=/tmp/socketao";
+std::string vtenc_factory = "    appsrc name=godotsrc do-timestamp=true is-live=true format=time ! video/x-raw, ! queue leaky=upstream ! videoconvert ! vtenc_h264_hw            bitrate=10000 ! video/x-h264,profile=high ! queue leaky=downstream ! rtph264pay config-interval=1 pt=96 ! shmsink wait-for-connection=false sync=true socket-path=/tmp/socketao";
+std::string nvh264enc_factory = "appsrc name=godotsrc do-timestamp=true is-live=true format=time ! video/x-raw,format=I420 ! queue leaky=upstream ! videoconvert ! nvh264enc                bitrate=10000 ! video/x-h264,profile=high ! queue leaky=downstream ! rtph264pay config-interval=1 pt=96 ! shmsink wait-for-connection=false sync=true socket-path=/tmp/socketao";
 
 GstElement* global_pipeline = NULL;
 
@@ -59,9 +59,10 @@ media_configure(GstRTSPMediaFactory *factory, GstRTSPMedia *media,
 }
 
 
-std::string find_working_hw_encoder()
+
+std::string find_working_pipeline()
 {
-    std::vector<std::string> encoders = {"nvh264enc", "msdkh264enc", "vtenc_h264_hw", "x264enc"};
+    std::vector<std::string> encoders = {"nvh264enc", "vtenc_h264_hw", "x264enc"};
 
     for (const auto &encoder_name : encoders)
     {
@@ -85,7 +86,13 @@ std::string find_working_hw_encoder()
 
         gst_element_set_state(pipeline, GST_STATE_NULL);
         gst_object_unref(pipeline);
-        return encoder_name;
+        if (encoder_name == "nvh264enc") {
+            return nvh264enc_factory;
+        } else if (encoder_name == "vtenc_h264_hw") {
+            return vtenc_factory;
+        } else if (encoder_name == "x264enc") {
+            return x264enc_factory;
+        } 
     }
     return "";
 }
@@ -145,8 +152,10 @@ void UdpH264Streamer::setup_rtsp_server()
 
     /* start serving, this never stops */
     g_print ("stream ready at rtsp://127.0.0.1:8554/test\n");
-    //auto encoder = find_working_hw_encoder();
-    pipeline = gst_parse_launch(nvh264enc_factory.c_str(), NULL);
+    
+    auto launch_str = find_working_pipeline();
+
+    pipeline = gst_parse_launch(launch_str.c_str(), NULL);
     if (pipeline) {
          GstStateChangeReturn ret = gst_element_set_state(pipeline, GST_STATE_PLAYING);
     } else {
