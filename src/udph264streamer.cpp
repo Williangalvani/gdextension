@@ -15,7 +15,7 @@ int input_height = 648;
 
 std::string x264enc_factory = "( appsrc name=mysrc is-live=true ! queue leaky=upstream ! videoconvert ! x264enc tune=zerolatency bitrate=10000 ! video/x-h264,profile=high ! queue leaky=downstream ! rtph264pay name=pay0 pt=96 ! udpsink host=127.0.0.1 port=5600 )";
 std::string vtenc_factory = "( appsrc name=mysrc is-live=true ! queue leaky=upstream ! videoconvert ! vtenc_h264_hw bitrate=10000 ! video/x-h264,profile=high ! queue leaky=downstream ! rtph264pay name=pay0 pt=96 ! udpsink host=127.0.0.1 port=5600 )";
-std::string nvh264enc_factory = "appsrc name=godotsrc do-timestamp=true is-live=true format=time ! video/x-raw, ! queue leaky=upstream ! videoconvert ! nvh264enc bitrate=10000 ! video/x-h264,profile=high ! queue leaky=downstream ! rtph264pay config-interval=1 pt=96 ! shmsink wait-for-connection=false sync=true socket-path=/tmp/socketao";
+std::string nvh264enc_factory = "appsrc name=godotsrc do-timestamp=true is-live=true format=time ! video/x-raw,format=I420 ! queue leaky=upstream ! videoconvert ! nvh264enc bitrate=10000 ! video/x-h264,profile=high ! queue leaky=downstream ! rtph264pay config-interval=1 pt=96 ! shmsink wait-for-connection=false sync=true socket-path=/tmp/socketao";
 
 GstElement* global_pipeline = NULL;
 
