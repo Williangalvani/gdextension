@@ -129,7 +129,7 @@ void UdpH264Streamer::setup_rtsp_server()
     * element with pay%d names will be a stream */
     factory = gst_rtsp_media_factory_new ();
     gst_rtsp_media_factory_set_launch (factory, "( "
-        "shmsrc is-live=true socket-path=/tmp/socketao do-timestamp=true ! application/x-rtp,media=video,clock-rate=90000,encoding-name=H264 ! rtph264depay ! h264parse config-interval=1 ! queue ! rtph264pay name=pay0 pt=96 )");
+        "shmsrc is-live=true socket-path=/tmp/socketao do-timestamp=true ! application/x-rtp,media=video,clock-rate=90000,encoding-name=H264 ! rtph264depay ! h264parse config-interval=1 ! queue leaky=upstream ! rtph264pay name=pay0 pt=96 )");
 
     gst_rtsp_media_factory_set_enable_rtcp(factory, FALSE);
     gst_rtsp_media_factory_set_profiles (factory, GST_RTSP_PROFILE_AVPF);
