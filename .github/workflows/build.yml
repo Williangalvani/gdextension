@@ -170,7 +170,7 @@ jobs:
         with:
           name: ${{ github.event.repository.name }}-${{ matrix.identifier }}
           path: |
-            ${{ github.workspace }}/addons/
+            ${{ github.workspace }}/addons/streamer/
 
   zip-artifacts:
     needs: [build] # List all jobs that produce artifacts
