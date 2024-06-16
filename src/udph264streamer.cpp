@@ -12,10 +12,9 @@ bool need_frame = true;
 int input_width = 1152;
 int input_height = 648;
 
-
-std::string x264enc_factory = "  appsrc name=godotsrc do-timestamp=true is-live=true format=time ! video/x-raw, ! queue leaky=upstream ! videoconvert ! x264enc tune=zerolatency bitrate=10000 ! video/x-h264,profile=high ! queue leaky=downstream ! rtph264pay config-interval=1 pt=96 ! shmsink wait-for-connection=false sync=true socket-path=/tmp/socketao";
-std::string vtenc_factory = "    appsrc name=godotsrc do-timestamp=true is-live=true format=time ! video/x-raw, ! queue leaky=upstream ! videoconvert ! vtenc_h264_hw            bitrate=10000 ! video/x-h264,profile=high ! queue leaky=downstream ! rtph264pay config-interval=1 pt=96 ! shmsink wait-for-connection=false sync=true socket-path=/tmp/socketao";
-std::string nvh264enc_factory = "appsrc name=godotsrc do-timestamp=true is-live=true format=time ! video/x-raw,format=I420 ! queue leaky=upstream ! videoconvert ! nvh264enc                bitrate=10000 ! video/x-h264,profile=high ! queue leaky=downstream ! rtph264pay config-interval=1 pt=96 ! shmsink wait-for-connection=false sync=true socket-path=/tmp/socketao";
+std::string x264enc_factory = "  appsrc name=godotsrc do-timestamp=true is-live=true format=time ! video/x-raw, ! queue leaky=upstream ! videoconvert ! x264enc tune=zerolatency           bitrate=10000 ! video/x-h264,profile=high ! queue leaky=downstream ! rtph264pay config-interval=1 pt=96 ! shmsink wait-for-connection=false sync=true socket-path=/tmp/socketao";
+std::string vtenc_factory = "    appsrc name=godotsrc do-timestamp=true is-live=true format=time ! video/x-raw, ! queue leaky=upstream ! videoconvert ! vtenc_h264_hw                      bitrate=10000 ! video/x-h264,profile=high ! queue leaky=downstream ! rtph264pay config-interval=1 pt=96 ! shmsink wait-for-connection=false sync=true socket-path=/tmp/socketao";
+std::string nvh264enc_factory = "appsrc name=godotsrc do-timestamp=true is-live=true format=time ! video/x-raw,format=I420 ! queue leaky=upstream ! videoconvert ! nvh264enc gop-size=60   bitrate=10000 ! video/x-h264,profile=high ! queue leaky=downstream ! rtph264pay config-interval=1 pt=96 ! shmsink wait-for-connection=false sync=true socket-path=/tmp/socketao";
 
 GstElement* global_pipeline = NULL;
 
